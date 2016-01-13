@@ -1,0 +1,28 @@
+{
+  "name": "metadisk-client",
+  "version": "0.0.0",
+  "description": "http client for metadisk-api",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/storj/metadisk-client.git"
+  },
+  "keywords": [
+    "metadisk",
+    "client"
+  ],
+  "author": "Gordon Hall <gordon@storj.io>",
+  "license": "LGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/storj/metadisk-client/issues"
+  },
+  "homepage": "https://github.com/storj/metadisk-client#readme",
+  "dependencies": {
+    "kad": "^1.2.1",
+    "kad-spartacus": "0.0.3",
+    "request": "^2.67.0"
+  }
+}
