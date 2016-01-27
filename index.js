@@ -121,21 +121,79 @@ MetaDiskClient.prototype.updateBucketById = function(id, updates) {
 };
 
 /**
- * Updates the bucket
- * #storeFileInBucket
+ * Create bucket token
+ * #createToken
  * @param {String} id
+ * @param {Object} updates
  */
-MetaDiskClient.prototype.storeFileInBucket = function(id, fileStream) {
-
+MetaDiskClient.prototype.createToken = function(id, operation) {
+  return this._request('POST', '/buckets/' + id + '/tokens', {
+    operation: operation
+  });
 };
 
 /**
  * Updates the bucket
+ * #updateBucketById
+ * @param {String} id
+ * @param {Object} updates
+ */
+MetaDiskClient.prototype.updateBucketById = function(id, updates) {
+  return this._request('PATCH', '/buckets/' + id, updates || {});
+};
+
+/**
+ * Stores a file in the bucket
+ * #storeFileInBucket
+ * @param {String} id
+ * @param {String} token
+ * @param {stream.Readable} fileStream
+ */
+MetaDiskClient.prototype.storeFileInBucket = function(id, token, fileStream) {
+  var self = this;
+
+  return new Promise(function(resolve, reject) {
+    fileStream.pipe(request({
+      method: 'PUT',
+      baseUrl: self._options.baseURI,
+      uri: '/buckets/' + id,
+      json: true,
+      timeout: 60 * (60 * 1000),
+      forever: true,
+      headers: {
+        'x-token': token
+      }
+    }, function(err, res, body) {
+      if (err) {
+        return reject(err);
+      }
+
+      if (res.statusCode !== 200 && res.statusCode !== 304) {
+        return reject(new Error(body.error || body));
+      }
+
+      resolve(body);
+    }));
+  });
+};
+
+/**
+ * Retrieves a file from the bucket
  * #getFileFromBucket
  * @param {String} id
+ * @param {String} token
+ * @param {String} fileHash
+ * @returns {stream.Readable}
  */
-MetaDiskClient.prototype.getFileFromBucket = function(id, fileHash) {
-
+MetaDiskClient.prototype.getFileFromBucket = function(id, token, fileHash) {
+  return request({
+    method: 'GET',
+    baseUrl: this._options.baseURI,
+    uri: '/buckets/' + id + '/' + fileHash,
+    headers: {
+      'x-token': token
+    }
+  });
 };
 
 /**
@@ -153,9 +211,10 @@ MetaDiskClient.prototype._sha256 = function(data) {
  * @param {String} method
  * @param {String} path
  * @param {Object} params
+ * @param {Boolean} stream - optional return stream
  * @returns {Promise}
  */
-MetaDiskClient.prototype._request = function(method, path, params) {
+MetaDiskClient.prototype._request = function(method, path, params, stream) {
   let opts = {
     baseUrl: this._options.baseURI,
     uri: path,
@@ -172,6 +231,10 @@ MetaDiskClient.prototype._request = function(method, path, params) {
   }
 
   this._authenticate(opts);
+
+  if (stream) {
+    return request(opts);
+  }
 
   return new Promise(function(resolve, reject) {
     request(opts, function(err, res, body) {
