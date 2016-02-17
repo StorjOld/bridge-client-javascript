@@ -9,7 +9,7 @@ const crypto = require('crypto');
 const assert = require('assert');
 const querystring = require('querystring');
 const request = require('request');
-const KeyPair = require('kad-spartacus').KeyPair;
+const KeyPair = require('./lib/keypair');
 
 /**
  * Represents a MetaDisk HTTP client
