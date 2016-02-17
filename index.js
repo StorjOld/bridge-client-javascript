@@ -4,6 +4,7 @@
 
 'use strict';
 
+const async = require('async');
 const crypto = require('crypto');
 const assert = require('assert');
 const querystring = require('querystring');
@@ -183,16 +184,73 @@ MetaDiskClient.prototype.storeFileInBucket = function(id, token, fileStream) {
  * @param {String} id
  * @param {String} token
  * @param {String} fileHash
- * @returns {stream.Readable}
  */
 MetaDiskClient.prototype.getFileFromBucket = function(id, token, fileHash) {
-  return request({
-    method: 'GET',
-    baseUrl: this._options.baseURI,
-    uri: '/buckets/' + id + '/' + fileHash,
-    headers: {
-      'x-token': token
-    }
+  var self = this;
+
+  return new Promise(function(resolve, reject) {
+    request({
+      method: 'GET',
+      baseUrl: self._options.baseURI,
+      uri: '/buckets/' + id + '/' + fileHash,
+      headers: {
+        'x-token': token
+      },
+      json: true,
+      timeout: 60 * (60 * 1000),
+    }, function(err, res, body) {
+      if (err) {
+        return reject(err);
+      }
+
+      if (res.statusCode !== 200 && res.statusCode !== 304) {
+        return reject(new Error(body.error || body));
+      }
+
+      resolve(body);
+    });
+  });
+};
+
+/**
+ * Dispatches a series of requests based on the returned value of
+ * MetaDiskClient#getFileFromBucket to resolve all the shards and reassemble
+ * them together into a single Buffer
+ * @param {Array} instructions
+ */
+MetaDiskClient.prototype.resolveFileFromPointers = function(pointers) {
+  var self;
+
+  return new Promise(function(resolve, reject) {
+    async.map(pointers, function(pointer, done) {
+      var contact = pointer.destination;
+
+      request({
+        uri: 'http://' + contact.address + ':' + contact.port,
+        method: 'POST',
+        body: JSON.stringify(pointer.payload)
+      }, function(err, res, body) {
+        var shard;
+
+        if (err) {
+          return done(err);
+        }
+
+        try {
+          shard = new Buffer(JSON.parse(body).result.data_shard, 'hex');
+        } catch (err) {
+          return done(err);
+        }
+
+        done(null, shard);
+      });
+    }, function onAllShardsResolved(err, shards) {
+      if (err) {
+        return reject(err);
+      }
+
+      resolve(Buffer.concat(shards));
+    });
   });
 };
 

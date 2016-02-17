@@ -21,7 +21,8 @@
   },
   "homepage": "https://github.com/storj/metadisk-client#readme",
   "dependencies": {
-    "kad": "^1.2.1",
+    "async": "^1.5.2",
+    "datauri": "^1.0.4",
     "kad-spartacus": "0.0.3",
     "request": "^2.67.0"
   }
