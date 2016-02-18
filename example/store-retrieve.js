@@ -1,6 +1,6 @@
 'use strict';
 
-var MetaDiskClient = require('./');
+var MetaDiskClient = require('..');
 var fs = require('fs');
 var path = require('path');
 var DataURI = require('datauri');
