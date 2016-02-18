@@ -34,6 +34,7 @@ function MetaDiskClient(options) {
 /**
  * Get version information
  * #getInfo
+ * @returns {Promise}
  */
 MetaDiskClient.prototype.getInfo = function() {
   return this._request('GET', '/', {});
@@ -45,6 +46,7 @@ MetaDiskClient.prototype.getInfo = function() {
  * @param {Object} userdata
  * @param {String} userdata.email
  * @param {String} userdata.password
+ * @returns {Promise}
  */
 MetaDiskClient.prototype.createUser = function(data) {
   data.password = this._sha256(data.password);
@@ -54,6 +56,7 @@ MetaDiskClient.prototype.createUser = function(data) {
 /**
  * Returns list of public keys
  * #getPublicKeys
+ * @returns {Promise}
  */
 MetaDiskClient.prototype.getPublicKeys = function() {
   return this._request('GET', '/keys', {});
@@ -63,6 +66,7 @@ MetaDiskClient.prototype.getPublicKeys = function() {
  * Registers a public key
  * #addPublicKey
  * @param {String} pubkey
+ * @returns {Promise}
  */
 MetaDiskClient.prototype.addPublicKey = function(pubkey) {
   return this._request('POST', '/keys', { key: pubkey });
@@ -72,6 +76,7 @@ MetaDiskClient.prototype.addPublicKey = function(pubkey) {
  * Removes the public key
  * #destroyPublicKey
  * @param {String} pubkey
+ * @returns {Promise}
  */
 MetaDiskClient.prototype.destroyPublicKey = function(pubkey) {
   return this._request('DELETE', '/keys/' + pubkey, {});
@@ -80,6 +85,7 @@ MetaDiskClient.prototype.destroyPublicKey = function(pubkey) {
 /**
  * Lists the buckets
  * #getBuckets
+ * @returns {Promise}
  */
 MetaDiskClient.prototype.getBuckets = function() {
   return this._request('GET', '/buckets', {});
@@ -89,6 +95,7 @@ MetaDiskClient.prototype.getBuckets = function() {
  * Returns the bucket by ID
  * #getBucketById
  * @param {String} id
+ * @returns {Promise}
  */
 MetaDiskClient.prototype.getBucketById = function(id) {
   return this._request('GET', '/buckets/' + id, {});
@@ -98,6 +105,7 @@ MetaDiskClient.prototype.getBucketById = function(id) {
  * Creates a new bucket
  * #createBucket
  * @param {Object} data
+ * @returns {Promise}
  */
 MetaDiskClient.prototype.createBucket = function(data) {
   return this._request('POST', '/buckets', data || {});
@@ -107,6 +115,7 @@ MetaDiskClient.prototype.createBucket = function(data) {
  * Removes the bucket
  * #destroyBucketById
  * @param {String} id
+ * @returns {Promise}
  */
 MetaDiskClient.prototype.destroyBucketById = function(id) {
   return this._request('DELETE', '/buckets/' + id, {});
@@ -117,6 +126,7 @@ MetaDiskClient.prototype.destroyBucketById = function(id) {
  * #updateBucketById
  * @param {String} id
  * @param {Object} updates
+ * @returns {Promise}
  */
 MetaDiskClient.prototype.updateBucketById = function(id, updates) {
   return this._request('PATCH', '/buckets/' + id, updates || {});
@@ -127,6 +137,7 @@ MetaDiskClient.prototype.updateBucketById = function(id, updates) {
  * #createToken
  * @param {String} id
  * @param {Object} updates
+ * @returns {Promise}
  */
 MetaDiskClient.prototype.createToken = function(id, operation) {
   return this._request('POST', '/buckets/' + id + '/tokens', {
@@ -139,6 +150,7 @@ MetaDiskClient.prototype.createToken = function(id, operation) {
  * #updateBucketById
  * @param {String} id
  * @param {Object} updates
+ * @returns {Promise}
  */
 MetaDiskClient.prototype.updateBucketById = function(id, updates) {
   return this._request('PATCH', '/buckets/' + id, updates || {});
@@ -150,6 +162,7 @@ MetaDiskClient.prototype.updateBucketById = function(id, updates) {
  * @param {String} id
  * @param {String} token
  * @param {stream.Readable|Buffer} file
+ * @returns {Promise}
  */
 MetaDiskClient.prototype.storeFileInBucket = function(id, token, file) {
   var self = this;
@@ -186,6 +199,7 @@ MetaDiskClient.prototype.storeFileInBucket = function(id, token, file) {
  * @param {String} id
  * @param {String} token
  * @param {String} fileHash
+ * @returns {Promise}
  */
 MetaDiskClient.prototype.getFileFromBucket = function(id, token, fileHash) {
   var self = this;
@@ -219,6 +233,7 @@ MetaDiskClient.prototype.getFileFromBucket = function(id, token, fileHash) {
  * MetaDiskClient#getFileFromBucket to resolve all the shards and reassemble
  * them together into a single Buffer
  * @param {Array} instructions
+ * @returns {Promise}
  */
 MetaDiskClient.prototype.resolveFileFromPointers = function(pointers) {
   var self;
@@ -260,6 +275,7 @@ MetaDiskClient.prototype.resolveFileFromPointers = function(pointers) {
  * Returns the SHA-256 hash
  * #_sha256
  * @param {String} data
+ * @returns {String}
  */
 MetaDiskClient.prototype._sha256 = function(data) {
   return crypto.createHash('sha256').update(data).digest('hex');
@@ -339,3 +355,4 @@ MetaDiskClient.prototype._authenticate = function(opts) {
 };
 
 module.exports = MetaDiskClient;
+module.exports.KeyPair = KeyPair;

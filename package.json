@@ -4,7 +4,8 @@
   "description": "http client for metadisk-api",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "./node_modules/.bin/browserify index.js -s MetaDiskClient -o dist/metadisk.browser.js"
   },
   "repository": {
     "type": "git",
@@ -26,5 +27,8 @@
     "elliptic": "^6.2.3",
     "ms": "^0.7.1",
     "request": "^2.67.0"
+  },
+  "devDependencies": {
+    "browserify": "^13.0.0"
   }
 }
