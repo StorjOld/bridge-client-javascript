@@ -9,6 +9,7 @@ const crypto = require('crypto');
 const assert = require('assert');
 const querystring = require('querystring');
 const request = require('request');
+const ms = require('ms');
 const KeyPair = require('./lib/keypair');
 
 /**
@@ -154,16 +155,17 @@ MetaDiskClient.prototype.storeFileInBucket = function(id, token, fileStream) {
   var self = this;
 
   return new Promise(function(resolve, reject) {
-    fileStream.pipe(request({
+    request({
       method: 'PUT',
       baseUrl: self._options.baseURI,
       uri: '/buckets/' + id,
       json: true,
-      timeout: 60 * (60 * 1000),
+      timeout: ms('10m'),
       forever: true,
       headers: {
         'x-token': token
-      }
+      },
+      formData: { data: fileStream }
     }, function(err, res, body) {
       if (err) {
         return reject(err);
@@ -174,7 +176,7 @@ MetaDiskClient.prototype.storeFileInBucket = function(id, token, fileStream) {
       }
 
       resolve(body);
-    }));
+    });
   });
 };
 
@@ -197,7 +199,7 @@ MetaDiskClient.prototype.getFileFromBucket = function(id, token, fileHash) {
         'x-token': token
       },
       json: true,
-      timeout: 60 * (60 * 1000),
+      timeout: ms('10m'),
     }, function(err, res, body) {
       if (err) {
         return reject(err);
