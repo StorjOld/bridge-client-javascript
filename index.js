@@ -149,9 +149,9 @@ MetaDiskClient.prototype.updateBucketById = function(id, updates) {
  * #storeFileInBucket
  * @param {String} id
  * @param {String} token
- * @param {stream.Readable} fileStream
+ * @param {stream.Readable|Buffer} file
  */
-MetaDiskClient.prototype.storeFileInBucket = function(id, token, fileStream) {
+MetaDiskClient.prototype.storeFileInBucket = function(id, token, file) {
   var self = this;
 
   return new Promise(function(resolve, reject) {
@@ -165,7 +165,7 @@ MetaDiskClient.prototype.storeFileInBucket = function(id, token, fileStream) {
       headers: {
         'x-token': token
       },
-      formData: { data: fileStream }
+      formData: { data: file }
     }, function(err, res, body) {
       if (err) {
         return reject(err);
