@@ -3,7 +3,6 @@
 var MetaDiskClient = require('..');
 var fs = require('fs');
 var path = require('path');
-var DataURI = require('datauri');
 
 var metadisk = new MetaDiskClient({
   baseURI: 'http://127.0.0.1:6500',
@@ -38,13 +37,13 @@ metadisk.createToken(bucket, 'PUSH')
     return metadisk.resolveFileFromPointers(pointers);
   }, function(err) {
     console.log(err);
-    console.log(err.stack)
+    console.log(err.stack);
   }).then(function(buffer) {
     console.log('Successfully resolved data!', buffer);
-    console.log('Data URI:', (new DataURI()).format(
-      path.extname(process.argv[2]) || '.txt',
-      buffer
-    ).content);
+    console.log(
+      'Data URI:',
+      MetaDiskClient.utils.toDataURI(buffer, path.extname(process.argv[2]))
+    );
   }, function(err) {
     console.log(err);
   });

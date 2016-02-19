@@ -10,6 +10,7 @@ const assert = require('assert');
 const querystring = require('querystring');
 const request = require('request');
 const ms = require('ms');
+const utils = require('./lib/utils');
 const KeyPair = require('./lib/keypair');
 
 /**
@@ -356,3 +357,4 @@ MetaDiskClient.prototype._authenticate = function(opts) {
 
 module.exports = MetaDiskClient;
 module.exports.KeyPair = KeyPair;
+module.exports.utils = utils;
