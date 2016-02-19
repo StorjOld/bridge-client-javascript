@@ -38,6 +38,7 @@ metadisk.createToken(bucket, 'PUSH')
     return metadisk.resolveFileFromPointers(pointers);
   }, function(err) {
     console.log(err);
+    console.log(err.stack)
   }).then(function(buffer) {
     console.log('Successfully resolved data!', buffer);
     console.log('Data URI:', (new DataURI()).format(

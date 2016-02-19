@@ -239,7 +239,7 @@ MetaDiskClient.prototype.resolveFileFromPointers = function(pointers) {
   var self;
 
   return new Promise(function(resolve, reject) {
-    async.map(pointers, function(pointer, done) {
+    async.mapLimit(pointers, 3, function(pointer, done) {
       var contact = pointer.destination;
 
       request({
