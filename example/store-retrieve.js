@@ -40,10 +40,6 @@ metadisk.createToken(bucket, 'PUSH')
     console.log(err.stack);
   }).then(function(buffer) {
     console.log('Successfully resolved data!', buffer);
-    console.log(
-      'Data URI:',
-      MetaDiskClient.utils.toDataURI(buffer, path.extname(process.argv[2]))
-    );
   }, function(err) {
     console.log(err);
   });
