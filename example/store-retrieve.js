@@ -6,11 +6,13 @@ var path = require('path');
 
 var metadisk = new MetaDiskClient({
   baseURI: 'http://127.0.0.1:6500',
-  privkey: 'ee1be6ddd665c88ab58a38dc78912bc238a7e6e71a274efa76293be937e759d2'
+  email: 'gordon@storj.io',
+  password: 'notmypassword'
 });
 
-var bucket = '5696c61934de4d3b0f6abe83';
+var bucket = '56d6048ab3dece1959aace73';
 var filehash = null;
+
 
 metadisk.createToken(bucket, 'PUSH')
   .then(function(token) {
