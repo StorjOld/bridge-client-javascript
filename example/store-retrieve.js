@@ -43,6 +43,9 @@ metadisk.createToken(bucket, 'PUSH')
       console.log('Error: ', err);
     }).on('end', function() {
       console.log('Complete file resolved!');
+      metadisk.listFilesInBucket(bucket).then(function(files) {
+        console.log('Bucket contains:', files);
+      });
     });
   }, function(err) {
     console.log(err);
