@@ -1,6 +1,6 @@
 {
   "name": "metadisk-client",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "api client library for metadisk",
   "main": "index.js",
   "scripts": {
