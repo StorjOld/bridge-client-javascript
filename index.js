@@ -4,5 +4,7 @@
 
 'use strict';
 
-module.exports = require('./lib/client');
+/** {@link Client} */
+module.exports.Client = require('./lib/client');
+/** {@link KeyPair} */
 module.exports.KeyPair = require('./lib/keypair');

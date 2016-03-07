@@ -1,15 +1,13 @@
 'use strict';
 
-var MetaDiskClient = require('..');
+// Import the client
+var metadisk = require('..');
 
-var metadisk = new MetaDiskClient({
-  baseURI: 'http://127.0.0.1:6500'
-});
+// Create unauthenticated instance
+var client = new metadisk.Client('https://api.metadisk.org');
 
-metadisk.createUser({
-  email: 'gordon@storj.io',
-  password: 'notmypassword'
-}).then(function(result) {
+// Register a user account
+client.createUser('you@domain.tld', 'somebigsecret').then(function(result) {
   console.log(result);
 }, function(err) {
   console.log(err);

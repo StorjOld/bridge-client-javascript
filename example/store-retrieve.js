@@ -1,53 +1,35 @@
 'use strict';
 
-var MetaDiskClient = require('..');
 var fs = require('fs');
-var path = require('path');
 
-var metadisk = new MetaDiskClient({
-  baseURI: 'http://127.0.0.1:6500',
-  basicauth: {
-    email: 'gordon@storj.io',
-    password: 'notmypassword'
-  }
+// Import the library
+var metadisk = require('..');
+
+// Create a client authenticated with your key
+var client = new metadisk.Client('https://api.metadisk.org', {
+  keypair: new metadisk.KeyPair('<your_private_ecdsa_key>')
 });
 
+// Keep track of the bucket ID and file hash
 var bucket = '56d6048ab3dece1959aace73';
 var filehash = null;
 
-
-metadisk.createToken(bucket, 'PUSH')
-  .then(function(token) {
-    console.log('Created PUSH token:', token);
-    console.log('Streaming file to MetaDisk...');
-    return metadisk.storeFileInBucket(token.bucket, token.token, process.argv[2]);
-  }, function(err) {
-    console.log(err);
-  }).then(function(filepointer) {
-    console.log('File stored successfully:', filepointer);
-    filehash = filepointer.hash;
-    return metadisk.createToken(bucket, 'PULL');
-  }, function(err) {
-    console.log(err);
-  }).then(function(token) {
-    console.log('Created PULL token:', token);
-    console.log('Getting file pointer from MetaDisk...');
-    return metadisk.getFilePointer(bucket, token.token, filehash);
-  }, function(err) {
-    console.log(err);
-  }).then(function(pointers) {
-    console.log('Got pointers', pointers);
-    metadisk.resolveFileFromPointers(pointers).on('data', function(chunk) {
-      console.log('Got shard: ', chunk);
-    }).on('error', function(err) {
-      console.log('Error: ', err);
-    }).on('end', function() {
-      console.log('Complete file resolved!');
-      metadisk.listFilesInBucket(bucket).then(function(files) {
-        console.log('Bucket contains:', files);
-      });
-    });
-  }, function(err) {
-    console.log(err);
-    console.log(err.stack);
-  });
+// Create a PUSH token
+client.createToken(bucket, 'PUSH').then(function(token) {
+  // Stream the file upload to metadisk
+  return client.storeFileInBucket(bucket, token.token, process.argv[2]);
+}).then(function(filepointer) {
+  // Track the file hash for later
+  filehash = filepointer.hash;
+  // Create a PULL token
+  return client.createToken(bucket, 'PULL');
+}).then(function(token) {
+  // Fetch the file pointer list
+  return client.getFilePointer(bucket, token.token, filehash);
+}).then(function(pointers) {
+  // Open download stream from network and a writable file stream
+  var download = client.resolveFileFromPointers(pointers);
+  var destination = fs.createWriteStream('<write_file_to_path>');
+  // Write downloaded file to disk
+  download.pipe(destination);
+});
