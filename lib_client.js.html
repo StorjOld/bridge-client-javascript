@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width">
+	<title>MetaDisk Client Source: lib/client.js</title>
+
+	<!--[if lt IE 9]>
+	<script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+	<link type="text/css" rel="stylesheet" href="styles/sunlight.default.css">
+
+	<link type="text/css" rel="stylesheet" href="styles/site.cosmo.css">
+
+</head>
+
+<body>
+
+<div class="navbar navbar-default navbar-fixed-top navbar-inverse">
+<div class="container">
+	<div class="navbar-header">
+		<a class="navbar-brand" href="index.html">MetaDisk Client</a>
+		<button class="navbar-toggle" type="button" data-toggle="collapse" data-target="#topNavigation">
+			<span class="icon-bar"></span>
+			<span class="icon-bar"></span>
+			<span class="icon-bar"></span>
+        </button>
+	</div>
+	<div class="navbar-collapse collapse" id="topNavigation">
+		<ul class="nav navbar-nav">
+			
+			<li class="dropdown">
+				<a href="modules.list.html" class="dropdown-toggle" data-toggle="dropdown">Modules<b class="caret"></b></a>
+				<ul class="dropdown-menu ">
+					<li><a href="module-metadisk-client.html">metadisk-client</a></li>
+				</ul>
+			</li>
+			
+			<li class="dropdown">
+				<a href="classes.list.html" class="dropdown-toggle" data-toggle="dropdown">Classes<b class="caret"></b></a>
+				<ul class="dropdown-menu ">
+					<li><a href="Client.html">Client</a></li><li><a href="KeyPair.html">KeyPair</a></li>
+				</ul>
+			</li>
+			
+		</ul>
+		<div class="col-sm-3 col-md-3">
+            <form class="navbar-form" role="search">
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Search" name="q" id="search-input">
+                    <div class="input-group-btn">
+                        <button class="btn btn-default" id="search-submit"><i class="glyphicon glyphicon-search"></i></button>
+                    </div>
+                </div>
+            </form>
+        </div>
+	</div>
+
+</div>
+</div>
+
+
+<div class="container" id="toc-content">
+<div class="row">
+
+	
+	<div class="col-md-12">
+	
+		<div id="main">
+			
+
+		<h1 class="page-title">Source: lib/client.js</h1>
+    
+<section>
+    <article>
+        <pre
+            class="sunlight-highlight-javascript linenums">'use strict';
+
+var fs = require('fs');
+var async = require('async');
+var crypto = require('crypto');
+var assert = require('assert');
+var querystring = require('querystring');
+var request = require('request');
+var ms = require('ms');
+var EventEmitter = require('events').EventEmitter;
+var ReadableStream = require('readable-stream');
+var KeyPair = require('./keypair');
+
+/**
+ * Exposes a MetaDisk API client
+ * @constructor
+ * @param {String} uri - API base URI ('https://api.metadisk.org')
+ * @param {Object} options
+ * @param {KeyPair} options.keypair - KeyPair instance for request signing
+ * @param {Object} options.basicauth
+ * @param {String} options.basicauth.email - Email address for HTTP basic auth
+ * @param {String} options.basicauth.password - Password for HTTP basic auth
+ */
+function Client(uri, options) {
+  if (!(this instanceof Client)) {
+    return new Client(uri, options);
+  }
+
+  assert.ok(options, 'Invalid options supplied');
+
+  this._options = options;
+  this._options.baseURI = uri || 'https://api.metadisk.org';
+}
+
+/**
+ * Get the remote MetaDisk API documentation and version as JSON
+ * @returns {Promise}
+ */
+Client.prototype.getInfo = function() {
+  return this._request('GET', '/', {});
+};
+
+/**
+ * Registers a user account
+ * @param {String} email - Email address for verification email
+ * @param {String} password - Password to register (hashed automatically)
+ * @returns {Promise}
+ */
+Client.prototype.createUser = function(email, password) {
+  return this._request('POST', '/users', {
+    email: email,
+    password: this._sha256(password)
+  });
+};
+
+/**
+ * Returns list of associated public keys
+ * @returns {Promise}
+ */
+Client.prototype.getPublicKeys = function() {
+  return this._request('GET', '/keys', {});
+};
+
+/**
+ * Registers a public key for the caller
+ * @param {String} pubkey - Hex encoded ECDSA (secp256k1) public key
+ * @returns {Promise}
+ */
+Client.prototype.addPublicKey = function(pubkey) {
+  return this._request('POST', '/keys', { key: pubkey });
+};
+
+/**
+ * Disassociates the public key from the caller
+ * @param {String} pubkey - Hex encoded ECDSA (secp256k1) public key
+ * @returns {Promise}
+ */
+Client.prototype.destroyPublicKey = function(pubkey) {
+  return this._request('DELETE', '/keys/' + pubkey, {});
+};
+
+/**
+ * Lists the caller's file buckets
+ * @returns {Promise}
+ */
+Client.prototype.getBuckets = function() {
+  return this._request('GET', '/buckets', {});
+};
+
+/**
+ * Returns the bucket information by ID
+ * @param {String} id - Unique bucket ID
+ * @returns {Promise}
+ */
+Client.prototype.getBucketById = function(id) {
+  return this._request('GET', '/buckets/' + id, {});
+};
+
+/**
+ * Creates a new file bucket
+ * @param {Object} data - Bucket parameters for creation
+ * @returns {Promise}
+ */
+Client.prototype.createBucket = function(data) {
+  return this._request('POST', '/buckets', data || {});
+};
+
+/**
+ * Removes the bucket
+ * @param {String} id - Unique bucket ID
+ * @returns {Promise}
+ */
+Client.prototype.destroyBucketById = function(id) {
+  return this._request('DELETE', '/buckets/' + id, {});
+};
+
+/**
+ * Updates the bucket
+ * @param {String} id - Unique bucket ID
+ * @param {Object} updates - Bucket update parameters
+ * @returns {Promise}
+ */
+Client.prototype.updateBucketById = function(id, updates) {
+  return this._request('PATCH', '/buckets/' + id, updates || {});
+};
+
+/**
+ * Lists the files stored in a bucket
+ * @param {String} id - Unique bucket ID
+ * @returns {Promise}
+ */
+Client.prototype.listFilesInBucket = function(id) {
+  return this._request('GET', '/buckets/' + id + '/files', {});
+};
+
+/**
+ * Create bucket token
+ * @param {String} id - Unique bucket ID
+ * @param {String} operation - PUSH or PULL (file operation)
+ * @returns {Promise}
+ */
+Client.prototype.createToken = function(id, operation) {
+  return this._request('POST', '/buckets/' + id + '/tokens', {
+    operation: operation
+  });
+};
+
+/**
+ * Stores a file in the bucket
+ * @param {String} id - Unique bucket ID
+ * @param {String} token - Token from {@link Client#createToken}
+ * @param {String|Buffer} file - Raw binary buffer or path to local file
+ * @returns {Promise}
+ */
+Client.prototype.storeFileInBucket = function(id, token, file) {
+  var self = this;
+  var size = 0;
+
+  assert(
+    typeof window === 'undefined',
+    'This method is not supported in the browser'
+  );
+
+  if (!Buffer.isBuffer(file)) {
+    size = fs.statSync(file).size;
+  } else {
+    size = file.length;
+  }
+
+  return new Promise(function(resolve, reject) {
+    request({
+      method: 'PUT',
+      baseUrl: self._options.baseURI,
+      uri: '/buckets/' + id + '/files',
+      json: true,
+      timeout: ms('10m'),
+      forever: true,
+      headers: {
+        'x-token': token,
+        'x-filesize': size
+      },
+      formData: {
+        data: Buffer.isBuffer(file) ? file : fs.createReadStream(file)
+      }
+    }, function(err, res, body) {
+      if (err) {
+        return reject(err);
+      }
+
+      if (res.statusCode !== 200 &amp;&amp; res.statusCode !== 304) {
+        return reject(new Error(body.error || body));
+      }
+
+      resolve(body);
+    });
+  });
+};
+
+/**
+ * Retrieves a file pointer from the bucket
+ * @param {String} bucket - Unique bucket ID
+ * @param {String} token - Token from {@link Client#createToken}
+ * @param {String} fileHash - The unique file pointer ID
+ * @returns {Promise}
+ */
+Client.prototype.getFilePointer = function(bucket, token, fileHash) {
+  var self = this;
+
+  return new Promise(function(resolve, reject) {
+    request({
+      method: 'GET',
+      baseUrl: self._options.baseURI,
+      uri: '/buckets/' + bucket + '/files/' + fileHash,
+      headers: {
+        'x-token': token
+      },
+      json: true,
+      timeout: ms('10m'),
+    }, function(err, res, body) {
+      if (err) {
+        return reject(err);
+      }
+
+      if (res.statusCode !== 200 &amp;&amp; res.statusCode !== 304) {
+        return reject(new Error(body.error || body));
+      }
+
+      resolve(body);
+    });
+  });
+};
+
+/**
+ * Dispatches a series of requests based on the returned value of
+ * {@link Client#getFilePointer} to resolve all the shards and
+ * reassemble them together
+ * @param {Array} pointers - Result of {@link Client#getFilePointer}
+ * @returns {ReadableStream}
+ */
+Client.prototype.resolveFileFromPointers = function(pointers) {
+  var self;
+
+  function resolveFile(limit, callback) {
+    var emitter = new EventEmitter();
+
+    async.mapLimit(pointers, limit, function(pointer, done) {
+      var contact = pointer.destination;
+
+      request({
+        uri: 'http://' + contact.address + ':' + contact.port,
+        method: 'POST',
+        body: JSON.stringify(pointer.payload)
+      }, function(err, res, body) {
+        var shard;
+
+        if (err) {
+          return done(err);
+        }
+
+        try {
+          shard = new Buffer(JSON.parse(body).result.data_shard, 'hex');
+        } catch (err) {
+          return done(err);
+        }
+
+        emitter.emit('data', shard);
+        done(null);
+      });
+    }, function onAllShardsResolved(err) {
+      if (err) {
+        return emitter.emit('error', err);
+      }
+
+      emitter.emit('end');
+    });
+
+    return emitter;
+  }
+
+  return new ReadableStream({
+    read: function() {
+      var self = this;
+
+      if (this._isResolving) {
+        return;
+      }
+
+      this._isResolving = true;
+
+      resolveFile(1).on('data', function(chunk) {
+        self.push(chunk);
+      }).on('end', function() {
+        self.push(null);
+      });
+    }
+  });
+};
+
+/**
+ * Returns the SHA-256 hash of the given input data
+ * @private
+ * @param {String} data
+ * @returns {String}
+ */
+Client.prototype._sha256 = function(data) {
+  return crypto.createHash('sha256').update(data).digest('hex');
+};
+
+/**
+ * Sends a request to the metadisk-api
+ * @private
+ * @param {String} method - HTTP verb
+ * @param {String} path - Endpoint path
+ * @param {Object} params - Request parameters
+ * @param {Boolean} stream - Return the raw response stream?
+ * @returns {Promise}
+ */
+Client.prototype._request = function(method, path, params, stream) {
+  var opts = {
+    baseUrl: this._options.baseURI,
+    uri: path,
+    method: method
+  };
+
+  params.__nonce = Date.now();
+
+  if (['GET', 'DELETE'].indexOf(method) !== -1) {
+    opts.qs = params;
+    opts.json = true;
+  } else {
+    opts.json = params;
+  }
+
+  this._authenticate(opts);
+
+  if (stream) {
+    return request(opts);
+  }
+
+  return new Promise(function(resolve, reject) {
+    request(opts, function(err, res, body) {
+      if (err) {
+        return reject(err);
+      }
+
+      if (res.statusCode !== 200 &amp;&amp; res.statusCode !== 304) {
+        return reject(new Error(body.error || body));
+      }
+
+      resolve(body);
+    });
+  });
+};
+
+/**
+ * Adds authentication headers to request object
+ * @private
+ * @param {Object} opts - Options parameter passed to request
+ * @return {Object}
+ */
+Client.prototype._authenticate = function(opts) {
+  if (this._options.keypair) {
+    var payload = ['GET', 'DELETE'].indexOf(opts.method) !== -1 ?
+                  querystring.stringify(opts.qs) :
+                  JSON.stringify(opts.json);
+    var keypair = KeyPair(this._options.privkey);
+    var contract = [opts.method, opts.uri, payload].join('\n');
+
+    opts.headers = opts.headers || {};
+    opts.headers['x-pubkey'] = this._options.keypair.getPublicKey();
+    opts.headers['x-signature'] = this._options.keypair.sign(contract);
+  } else if (this._options.basicauth) {
+    opts.auth = {
+      user: this._options.basicauth.email,
+      pass: this._sha256(this._options.basicauth.password)
+    };
+  }
+
+  return opts;
+};
+
+module.exports = Client;
+</pre>
+    </article>
+</section>
+
+
+
+
+
+		</div>
+	</div>
+
+	<div class="clearfix"></div>
+
+	
+
+</div>
+</div>
+
+<div class="modal fade" id="searchResults">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title">Search results</h4>
+      </div>
+      <div class="modal-body"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div>
+
+<footer>
+
+
+	<span class="copyright">
+	Copyright 2016 Storj Labs
+	</span>
+
+<span class="jsdoc-message">
+	Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a>
+	
+	using the <a href="https://github.com/docstrap/docstrap">DocStrap template</a>.
+</span>
+</footer>
+
+<script src="scripts/docstrap.lib.js"></script>
+<script src="scripts/toc.js"></script>
+<script type="text/javascript" src="scripts/fulltext-search-ui.js"></script>
+
+<script>
+$( function () {
+	$( "[id*='$']" ).each( function () {
+		var $this = $( this );
+
+		$this.attr( "id", $this.attr( "id" ).replace( "$", "__" ) );
+	} );
+
+	$( ".tutorial-section pre, .readme-section pre" ).each( function () {
+		var $this = $( this );
+
+		var example = $this.find( "code" );
+		exampleText = example.html();
+		var lang = /{@lang (.*?)}/.exec( exampleText );
+		if ( lang && lang[1] ) {
+			exampleText = exampleText.replace( lang[0], "" );
+			example.html( exampleText );
+			lang = lang[1];
+		} else {
+			var langClassMatch = example.parent()[0].className.match(/lang\-(\S+)/);
+			lang = langClassMatch ? langClassMatch[1] : "javascript";
+		}
+
+		if ( lang ) {
+
+			$this
+			.addClass( "sunlight-highlight-" + lang )
+			.addClass( "linenums" )
+			.html( example.html() );
+
+		}
+	} );
+
+	Sunlight.highlightAll( {
+		lineNumbers : true,
+		showMenu : true,
+		enableDoclinks : true
+	} );
+
+	$.catchAnchorLinks( {
+        navbarOffset: 10
+	} );
+	$( "#toc" ).toc( {
+		anchorName  : function ( i, heading, prefix ) {
+			var id = $( heading ).attr( "id" );
+			return id && id.replace(/\~/g, '-inner-').replace(/\./g, '-static-') || ( prefix + i );
+		},
+		selectors   : "#toc-content h1,#toc-content h2,#toc-content h3,#toc-content h4",
+		showAndHide : false,
+		smoothScrolling: true
+	} );
+
+	$( "#main span[id^='toc']" ).addClass( "toc-shim" );
+	$( '.dropdown-toggle' ).dropdown();
+
+    $( "table" ).each( function () {
+      var $this = $( this );
+      $this.addClass('table');
+    } );
+
+} );
+</script>
+
+
+
+<!--Navigation and Symbol Display-->
+
+
+<!--Google Analytics-->
+
+
+<script type="text/javascript">
+	$(document).ready(function() {
+		SearcherDisplay.init();
+	});
+</script>
+
+</body>
+</html>
