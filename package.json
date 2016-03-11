@@ -1,6 +1,6 @@
 {
   "name": "metadisk-client",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "api client library for metadisk",
   "main": "index.js",
   "scripts": {
@@ -25,6 +25,7 @@
   "homepage": "https://github.com/storj/metadisk-client#readme",
   "dependencies": {
     "async": "^1.5.2",
+    "binaryjs": "^0.2.1",
     "elliptic": "^6.2.3",
     "ms": "^0.7.1",
     "readable-stream": "^2.0.5",
