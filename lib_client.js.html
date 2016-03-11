@@ -84,6 +84,7 @@ var assert = require('assert');
 var querystring = require('querystring');
 var request = require('request');
 var ms = require('ms');
+var BinaryClient = require('binaryjs').BinaryClient;
 var EventEmitter = require('events').EventEmitter;
 var ReadableStream = require('readable-stream');
 var KeyPair = require('./keypair');
@@ -103,9 +104,7 @@ function Client(uri, options) {
     return new Client(uri, options);
   }
 
-  assert.ok(options, 'Invalid options supplied');
-
-  this._options = options;
+  this._options = options || {};
   this._options.baseURI = uri || 'https://api.metadisk.org';
 }
 
@@ -321,27 +320,25 @@ Client.prototype.resolveFileFromPointers = function(pointers) {
     var emitter = new EventEmitter();
 
     async.mapLimit(pointers, limit, function(pointer, done) {
-      var contact = pointer.destination;
+      var uri = pointer.channel;
+      var client = new BinaryClient(uri);
 
-      request({
-        uri: 'http://' + contact.address + ':' + contact.port,
-        method: 'POST',
-        body: JSON.stringify(pointer.payload)
-      }, function(err, res, body) {
-        var shard;
+      client.on('open', function() {
+        var stream = client.send(null, {
+          token: pointer.token,
+          hash: pointer.hash,
+          operation: pointer.operation
+        });
 
-        if (err) {
-          return done(err);
-        }
+        stream.on('data', function(chunk) {
+          emitter.emit('data', chunk);
+        });
 
-        try {
-          shard = new Buffer(JSON.parse(body).result.data_shard, 'hex');
-        } catch (err) {
-          return done(err);
-        }
+        stream.on('end', function() {
+          done();
+        });
 
-        emitter.emit('data', shard);
-        done(null);
+        stream.on('error', done);
       });
     }, function onAllShardsResolved(err) {
       if (err) {
