@@ -5,9 +5,14 @@
   "main": "index.js",
   "scripts": {
     "test": "",
-    "build": "./node_modules/.bin/browserify index.js -s metadisk -o dist/metadisk.browser.js",
+    "build": "npm run build-bundle && npm run build-minify && echo $(date) >> dist/timestamp.txt",
+    "build-bundle": "./node_modules/.bin/browserify index.js -s metadisk -o dist/metadisk.browser.js",
+    "build-minify": "./node_modules/.bin/uglifyjs dist/metadisk.browser.js -o dist/metadisk.browser.min.js",
     "makedoc": "./node_modules/.bin/jsdoc index.js lib -r -R README.md -c .jsdoc.json --verbose -d ./jsdoc",
     "publishdoc": "npm run makedoc && node script/publishdoc.js"
+  },
+  "browser": {
+    "binaryjs": "binaryjs-client"
   },
   "repository": {
     "type": "git",
@@ -25,6 +30,7 @@
   "homepage": "https://github.com/storj/metadisk-client#readme",
   "dependencies": {
     "async": "^1.5.2",
+    "binaryjs": "^0.2.1",
     "binaryjs-client": "^1.0.0",
     "elliptic": "^6.2.3",
     "ms": "^0.7.1",
@@ -35,6 +41,7 @@
     "browserify": "^13.0.0",
     "gh-pages": "^0.11.0",
     "ink-docstrap": "^1.1.4",
-    "jsdoc": "^3.4.0"
+    "jsdoc": "^3.4.0",
+    "uglify-js": "^2.6.2"
   }
 }

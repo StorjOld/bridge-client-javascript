@@ -21,7 +21,7 @@ var assert = require('assert');
 var querystring = require('querystring');
 var request = require('request');
 var ms = require('ms');
-var BinaryClient = require('binaryjs-client').BinaryClient;
+var BinaryClient = require('binaryjs').BinaryClient;
 var EventEmitter = require('events').EventEmitter;
 var ReadableStream = require('readable-stream');
 var KeyPair = require('./keypair');
@@ -393,7 +393,7 @@ Client.prototype._authenticate = function(opts) {
 module.exports = Client;
 
 }).call(this,{"isBuffer":require("../node_modules/browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js")})
-},{"../node_modules/browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js":176,"./keypair":3,"assert":10,"async":4,"binaryjs-client":5,"crypto":29,"events":173,"fs":9,"ms":238,"querystring":183,"readable-stream":250,"request":251}],3:[function(require,module,exports){
+},{"../node_modules/browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js":176,"./keypair":3,"assert":10,"async":4,"binaryjs":5,"crypto":29,"events":173,"fs":9,"ms":238,"querystring":183,"readable-stream":250,"request":251}],3:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
