@@ -307,9 +307,9 @@ Client.prototype.getFilePointer = function(bucket, token, fileHash) {
 };
 
 /**
- * Dispatches a series of requests based on the returned value of
+ * Open a series of data channels based on the returned value of
  * {@link Client#getFilePointer} to resolve all the shards and
- * reassemble them together
+ * reassemble them together as a binary stream
  * @param {Array} pointers - Result of {@link Client#getFilePointer}
  * @returns {ReadableStream}
  */
