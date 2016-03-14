@@ -437,7 +437,7 @@ Client.prototype._authenticate = function(opts) {
     var payload = ['GET', 'DELETE'].indexOf(opts.method) !== -1 ?
                   querystring.stringify(opts.qs) :
                   JSON.stringify(opts.json);
-    var keypair = KeyPair(this._options.privkey);
+
     var contract = [opts.method, opts.uri, payload].join('\n');
 
     opts.headers = opts.headers || {};
