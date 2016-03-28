@@ -12,7 +12,7 @@
     "publishdoc": "npm run makedoc && node script/publishdoc.js"
   },
   "browser": {
-
+    "ws": false
   },
   "repository": {
     "type": "git",
