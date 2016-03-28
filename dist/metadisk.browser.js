@@ -398,7 +398,7 @@ Client.prototype._authenticate = function(opts) {
 module.exports = Client;
 
 }).call(this,require("buffer").Buffer)
-},{"./keypair":3,"assert":6,"async":4,"buffer":21,"crypto":25,"events":169,"fs":5,"ms":234,"querystring":179,"readable-stream":246,"request":247,"ws":7}],3:[function(require,module,exports){
+},{"./keypair":3,"assert":6,"async":4,"buffer":21,"crypto":25,"events":169,"fs":7,"ms":234,"querystring":179,"readable-stream":246,"request":247,"ws":7}],3:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
