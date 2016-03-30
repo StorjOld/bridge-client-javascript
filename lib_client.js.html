@@ -84,7 +84,7 @@ var assert = require('assert');
 var querystring = require('querystring');
 var request = require('request');
 var ms = require('ms');
-var WebSocketClient = require('ws');
+var WebSocketClient = typeof window === 'undefined' ? require('ws') : WebSocket;
 var EventEmitter = require('events').EventEmitter;
 var ReadableStream = require('readable-stream');
 var KeyPair = require('./keypair');
@@ -316,72 +316,62 @@ Client.prototype.getFilePointer = function(bucket, token, fileHash) {
  * @returns {ReadableStream}
  */
 Client.prototype.resolveFileFromPointers = function(pointers) {
-  var self;
+  var iteration = 0;
+  var stream = new ReadableStream({
+    read: function() {
+      var self = this;
+      var pointer = pointers[iteration];
 
-  function resolveFile(limit, callback) {
-    var emitter = new EventEmitter();
+      if (!pointers[iteration]) {
+        return this.push(null);
+      }
 
-    async.mapLimit(pointers, limit, function(pointer, done) {
       var uri = pointer.channel;
       var client = new WebSocketClient(uri);
 
-      client.on('open', function() {
+      client.onopen = function() {
         client.send(JSON.stringify({
           token: pointer.token,
           hash: pointer.hash,
           operation: pointer.operation
         }));
+      };
 
-        client.on('message', function(data) {
-          if (!Buffer.isBuffer(data)) {
-            try {
-              data = JSON.parse(data);
-            } catch (err) {
-              return emitter.emit('error', err);
-            }
+      client.onmessage = function(e) {
+        var json = null;
+        var data = e.data;
 
-            if (data.code &amp;&amp; data.code !== 200) {
-              return emitter.emit('error', new Error(data.message));
-            }
+        if (typeof Blob !== 'undefined' &amp;&amp; e.data instanceof Blob) {
+          data = new Buffer(e.data);
+        }
+
+        if (!Buffer.isBuffer(data)) {
+          try {
+            json = JSON.parse(data);
+          } catch (err) {
+            return self.emit('error', err);
           }
 
-          emitter.emit('data', data);
-        });
+          if (json.code &amp;&amp; json.code !== 200) {
+            return self.emit('error', new Error(json.message));
+          }
+        }
 
-        client.on('close', function() {
-          done();
-        });
+        iteration++;
+        self.push(data);
+      };
 
-        client.on('error', done);
-      });
-    }, function onAllShardsResolved(err) {
-      if (err) {
-        return emitter.emit('error', err);
-      }
+      client.onclose = function() {
+        /* noop */
+      };
 
-      emitter.emit('end');
-    });
-
-    return emitter;
-  }
-
-  return new ReadableStream({
-    read: function() {
-      var self = this;
-
-      if (this._isResolving) {
-        return;
-      }
-
-      this._isResolving = true;
-
-      resolveFile(1).on('data', function(chunk) {
-        self.push(chunk);
-      }).on('end', function() {
-        self.push(null);
-      });
+      client.onerror = function(err) {
+        self.emit('error', err);
+      };
     }
   });
+
+  return stream;
 };
 
 /**
