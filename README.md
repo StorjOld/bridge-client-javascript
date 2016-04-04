@@ -1,15 +1,15 @@
-MetaDisk Client
-===============
+Storj Bridge Client
+===================
 
 A Simple HTTP client for communicating with Storj Bridge.
 
 Quick Start
 -----------
 
-Install the MetaDisk client tools using NPM:
+Install the Storj Bridge client tools using NPM:
 
 ```
-npm install metadisk-client --save
+npm install storj-bridge-client --save
 ```
 
 Optionally build a browser bundle:
@@ -28,7 +28,7 @@ Register a user account on Storj Bridge:
 var bridge = require('storj-bridge-client');
 
 // Create unauthenticated instance
-var client = new metadisk.Client('https://api.metadisk.org');
+var client = new bridge.Client('https://api.metadisk.org');
 
 // Register a user account
 client.createUser('you@domain.tld', 'somebigsecret').then(function(result) {
@@ -42,10 +42,10 @@ Create a storage bucket for your user:
 
 ```
 // Import the client
-var metadisk = require('metadisk-client');
+var bridge = require('storj-bridge-client');
 
 // Authenticate with credentials
-var client = new metadisk.Client('https://api.metadisk.org', {
+var client = new bridge.Client('https://api.metadisk.org', {
   basicauth: {
     email: 'you@domain.tld',
     password: 'somebigsecret'
@@ -66,11 +66,11 @@ Store and retrieve a file from the Storj network:
 var fs = require('fs');
 
 // Import the library
-var metadisk = require('metadisk-client');
+var bridge = require('storj-bridge-client');
 
 // Create a client authenticated with your key
-var client = new metadisk.Client('https://api.metadisk.org', {
-  keypair: new metadisk.KeyPair('<your_private_ecdsa_key>')
+var client = new bridge.Client('https://api.metadisk.org', {
+  keypair: new bridge.KeyPair('<your_private_ecdsa_key>')
 });
 
 // Keep track of the bucket ID and file hash
@@ -101,7 +101,7 @@ client.createToken(bucket, 'PUSH').then(function(token) {
 License
 -------
 
-MetaDisk Client -  Copyright (C) 2016 Storj Labs, Inc
+Storj Bridge Client -  Copyright (C) 2016 Storj Labs, Inc
 
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU Lesser General Public License as published by the Free
