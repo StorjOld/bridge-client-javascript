@@ -4,7 +4,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width">
-	<title>MetaDisk Client Index</title>
+	<title>Bridge Client Index</title>
 
 	<!--[if lt IE 9]>
 	<script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
@@ -20,7 +20,7 @@
 <div class="navbar navbar-default navbar-fixed-top navbar-inverse">
 <div class="container">
 	<div class="navbar-header">
-		<a class="navbar-brand" href="index.html">MetaDisk Client</a>
+		<a class="navbar-brand" href="index.html">Bridge Client</a>
 		<button class="navbar-toggle" type="button" data-toggle="collapse" data-target="#topNavigation">
 			<span class="icon-bar"></span>
 			<span class="icon-bar"></span>
@@ -33,7 +33,7 @@
 			<li class="dropdown">
 				<a href="modules.list.html" class="dropdown-toggle" data-toggle="dropdown">Modules<b class="caret"></b></a>
 				<ul class="dropdown-menu ">
-					<li><a href="module-metadisk-client.html">metadisk-client</a></li>
+					<li><a href="module-bridge-client.html">bridge-client</a></li>
 				</ul>
 			</li>
 			
@@ -91,15 +91,15 @@
 
 
     <section class="readme-section">
-        <article><h1>MetaDisk Client</h1><p>A Simple HTTP client for communicating with the MetaDisk API.</p>
-<h2>Quick Start</h2><p>Install the MetaDisk client tools using NPM:</p>
-<pre class="prettyprint source"><code>npm install metadisk-client --save</code></pre><p>Optionally build a browser bundle:</p>
-<pre class="prettyprint source"><code>npm run build</code></pre><h2>Examples</h2><p>Register a user account on MetaDisk:</p>
+        <article><h1>Storj Bridge Client</h1><p>A Simple HTTP client for communicating with Storj Bridge.</p>
+<h2>Quick Start</h2><p>Install the Storj Bridge client tools using NPM:</p>
+<pre class="prettyprint source"><code>npm install storj-bridge-client --save</code></pre><p>Optionally build a browser bundle:</p>
+<pre class="prettyprint source"><code>npm run build</code></pre><h2>Examples</h2><p>Register a user account on Storj Bridge:</p>
 <pre class="prettyprint source"><code>// Import the client
-var metadisk = require('metadisk-client');
+var bridge = require('storj-bridge-client');
 
 // Create unauthenticated instance
-var client = new metadisk.Client('https://api.metadisk.org');
+var client = new bridge.Client('https://api.metadisk.org');
 
 // Register a user account
 client.createUser('you@domain.tld', 'somebigsecret').then(function(result) {
@@ -108,10 +108,10 @@ client.createUser('you@domain.tld', 'somebigsecret').then(function(result) {
   console.log(err);
 });</code></pre><p>Create a storage bucket for your user:</p>
 <pre class="prettyprint source"><code>// Import the client
-var metadisk = require('metadisk-client');
+var bridge = require('storj-bridge-client');
 
 // Authenticate with credentials
-var client = new metadisk.Client('https://api.metadisk.org', {
+var client = new bridge.Client('https://api.metadisk.org', {
   basicauth: {
     email: 'you@domain.tld',
     password: 'somebigsecret'
@@ -127,11 +127,11 @@ client.createBucket().then(function(result) {
 <pre class="prettyprint source"><code>var fs = require('fs');
 
 // Import the library
-var metadisk = require('metadisk-client');
+var bridge = require('storj-bridge-client');
 
 // Create a client authenticated with your key
-var client = new metadisk.Client('https://api.metadisk.org', {
-  keypair: new metadisk.KeyPair('&lt;your_private_ecdsa_key>')
+var client = new bridge.Client('https://api.metadisk.org', {
+  keypair: new bridge.KeyPair('&lt;your_private_ecdsa_key>')
 });
 
 // Keep track of the bucket ID and file hash
@@ -156,7 +156,7 @@ client.createToken(bucket, 'PUSH').then(function(token) {
   var destination = fs.createWriteStream('&lt;write_file_to_path>');
   // Write downloaded file to disk
   download.pipe(destination);
-});</code></pre><h2>License</h2><p>MetaDisk Client -  Copyright (C) 2016 Storj Labs, Inc</p>
+});</code></pre><h2>License</h2><p>Storj Bridge Client -  Copyright (C) 2016 Storj Labs, Inc</p>
 <p>This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU Lesser General Public License as published by the Free
 Software Foundation, either version 3 of the License, or (at your option) any

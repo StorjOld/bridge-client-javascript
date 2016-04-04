@@ -4,7 +4,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width">
-	<title>Bridge Client Source: lib/keypair.js</title>
+	<title>Bridge Client Module: bridge-client</title>
 
 	<!--[if lt IE 9]>
 	<script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
@@ -65,133 +65,249 @@
 <div class="row">
 
 	
-	<div class="col-md-12">
+	<div class="col-md-8">
 	
 		<div id="main">
 			
 
-		<h1 class="page-title">Source: lib/keypair.js</h1>
-    
+	<h1 class="page-title">Module: bridge-client</h1>
 <section>
-    <article>
-        <pre
-            class="sunlight-highlight-javascript linenums">'use strict';
 
-var assert = require('assert');
-var crypto = require('crypto');
-var elliptic = require('elliptic');
-var ecdsa = new elliptic.ec(elliptic.curves.secp256k1);
+<header>
+    
+</header>
 
-/**
- * Creates a ECDSA key pair instance
- * @constructor
- * @param {String|Buffer} privkey - Hex encoded ECDSA (secp256k1) public key
- */
-function KeyPair(privkey) {
-  if (!(this instanceof KeyPair)) {
-    return new KeyPair(privkey);
-  }
 
-  if (privkey) {
-    this._keypair = ecdsa.keyFromPrivate(privkey);
-  } else {
-    this._keypair = ecdsa.genKeyPair();
-  }
-}
+<article>
+    <div class="container-overview">
+    
+        
 
-/**
- * Returns the private key
- * @returns {String}
- */
-KeyPair.prototype.getPrivateKey = function() {
-  return this._keypair.getPrivate().toString('hex');
-};
+        
+<dl class="details">
+    
 
-/**
- * Returns the public key
- * @returns {String}
- */
-KeyPair.prototype.getPublicKey = function() {
-  var pubkey, pubkeyobj = this._keypair.getPublic();
-  var xbuf = new Buffer(pubkeyobj.x.toString('hex', 64), 'hex');
-  var ybuf = new Buffer(pubkeyobj.y.toString('hex', 64), 'hex');
+	
 
-  if (ybuf[ybuf.length - 1] % 2) {
-    pubkey = Buffer.concat([new Buffer([3]), xbuf]);
-  } else {
-    pubkey = Buffer.concat([new Buffer([2]), xbuf]);
-  }
+	
 
-  return pubkey.toString('hex');
-};
+	
 
-/**
- * Returns the nodeID
- * @returns {String}
- */
-KeyPair.prototype.getNodeID = function() {
-  function getNodeIdFromPublicKey(pubkey) {
-    if (!Buffer.isBuffer(pubkey)) {
-      pubkey = new Buffer(pubkey, 'hex');
-    }
+    
 
-    var pubhash = crypto.createHash('sha256').update(pubkey).digest();
-    var pubripe = crypto.createHash('rmd160').update(pubhash).digest();
+    
 
-    return pubripe.toString('hex');
-  }
+    
 
-  return getNodeIdFromPublicKey(this.getPublicKey());
-};
+    
 
-/**
- * Sign a message
- * @param {String|Buffer} data - Message to sign
- * @returns {String}
- */
-KeyPair.prototype.sign = function(data) {
-  if (!Buffer.isBuffer(data)) {
-    data = new Buffer(data, 'utf8');
-  }
+	
 
-  return ecdsa.sign(
-    crypto.createHash('sha256').update(data).digest('hex'),
-    this.getPrivateKey()
-  ).toDER('hex');
-};
+	
 
-/**
- * Verify a signature
- * @param {String|Buffer} data - Message to verify
- * @param {String|Buffer} pubkey - Hex encoded ECDSA (secp256k1) public key
- * @param {String|Buffer} signature - DER signature (hex)
- * @returns {Boolean}
- */
-KeyPair.prototype.verify = function(data, pubkey, signature) {
-  if (!Buffer.isBuffer(data)) {
-   data = new Buffer(data, 'utf8');
-  }
+	
 
-  if (!Buffer.isBuffer(signature)) {
-   signature = new Buffer(signature, 'hex');
-  }
+	
+	<dt class="tag-license method-doc-label method-doc-details-label">License:</dt>
+	<dd class="tag-license">
+		<ul class="dummy">
+			<li>magnet:?xt=urn:btih:0ef1b8170b3b615170ff270def6427c317705f85&dn=lgpl-3.0.txt LGPL-3.0</li>
+		</ul>
+	</dd>
+	
 
-  if (!Buffer.isBuffer(pubkey)) {
-   pubkey = ecdsa.keyFromPublic(pubkey, 'hex');
-  }
+	
 
-  return ecdsa.verify(
-    crypto.createHash('sha256').update(data).digest('hex'),
-    signature,
-    pubkey
-  );
-};
 
-module.exports = KeyPair;
-</pre>
-    </article>
+
+	
+	<dt class="tag-source method-doc-label method-doc-details-label">Source:</dt>
+	<dd class="tag-source">
+		<ul class="dummy">
+			<li>
+				<a href="index.js.html">index.js</a>,
+				 <a href="index.js.html#sunlight-1-line-1">line 1</a>
+			</li>
+		</ul>
+	</dd>
+	
+
+	
+
+	
+
+	
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Members</h3>
+
+        <dl>
+            
+<hr>
+<dt class="name" id=".KeyPair">
+    <h4><span class="type-signature">&lt;static> </span>KeyPair<span class="type-signature"></span></h4>
+
+    
+</dt>
+<dd>
+    
+    <div class="description">
+        <a href="KeyPair.html">KeyPair</a>
+    </div>
+    
+
+    
+
+    
+<dl class="details">
+    
+
+	
+
+	
+
+	
+
+    
+
+    
+
+    
+
+    
+
+	
+
+	
+
+	
+
+	
+
+	
+
+
+
+	
+	<dt class="tag-source method-doc-label method-doc-details-label">Source:</dt>
+	<dd class="tag-source">
+		<ul class="dummy">
+			<li>
+				<a href="index.js.html">index.js</a>,
+				 <a href="index.js.html#sunlight-1-line-11">line 11</a>
+			</li>
+		</ul>
+	</dd>
+	
+
+	
+
+	
+
+	
+</dl>
+
+
+    
+</dd>
+
+        
+            
+<hr>
+<dt class="name" id=".Client">
+    <h4><span class="type-signature">&lt;static> </span>Client<span class="type-signature"></span></h4>
+
+    
+</dt>
+<dd>
+    
+    <div class="description">
+        <a href="Client.html">Client</a>
+    </div>
+    
+
+    
+
+    
+<dl class="details">
+    
+
+	
+
+	
+
+	
+
+    
+
+    
+
+    
+
+    
+
+	
+
+	
+
+	
+
+	
+
+	
+
+
+
+	
+	<dt class="tag-source method-doc-label method-doc-details-label">Source:</dt>
+	<dd class="tag-source">
+		<ul class="dummy">
+			<li>
+				<a href="index.js.html">index.js</a>,
+				 <a href="index.js.html#sunlight-1-line-9">line 9</a>
+			</li>
+		</ul>
+	</dd>
+	
+
+	
+
+	
+
+	
+</dl>
+
+
+    
+</dd>
+
+        </dl>
+    
+
+    
+
+    
+
+    
+</article>
+
 </section>
-
 
 
 
@@ -201,6 +317,10 @@ module.exports = KeyPair;
 
 	<div class="clearfix"></div>
 
+	
+		<div class="col-md-3">
+			<div id="toc" class="col-md-3 hidden-xs hidden-sm hidden-md"></div>
+		</div>
 	
 
 </div>
