@@ -1,13 +1,13 @@
 {
-  "name": "metadisk-client",
+  "name": "storj-bridge-client",
   "version": "0.3.2",
-  "description": "api client library for metadisk",
+  "description": "api client library for storj bridge",
   "main": "index.js",
   "scripts": {
     "test": "",
     "build": "npm run build-bundle && npm run build-minify && echo $(date) >> dist/timestamp.txt",
-    "build-bundle": "./node_modules/.bin/browserify index.js -s metadisk -o dist/metadisk.browser.js",
-    "build-minify": "./node_modules/.bin/uglifyjs dist/metadisk.browser.js -o dist/metadisk.browser.min.js",
+    "build-bundle": "./node_modules/.bin/browserify index.js -s metadisk -o dist/storj-bridge.browser.js",
+    "build-minify": "./node_modules/.bin/uglifyjs dist/storj-bridge.browser.js -o dist/storj-bridge.browser.min.js",
     "makedoc": "./node_modules/.bin/jsdoc index.js lib -r -R README.md -c .jsdoc.json --verbose -d ./jsdoc",
     "publishdoc": "npm run makedoc && node script/publishdoc.js"
   },
@@ -17,7 +17,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/storj/metadisk-client.git"
+    "url": "git+https://github.com/storj/bridge-client-javascript.git"
   },
   "keywords": [
     "metadisk",
@@ -26,9 +26,9 @@
   "author": "Gordon Hall <gordon@storj.io>",
   "license": "LGPL-3.0",
   "bugs": {
-    "url": "https://github.com/storj/metadisk-client/issues"
+    "url": "https://github.com/storj/bridge-client-javascript/issues"
   },
-  "homepage": "https://github.com/storj/metadisk-client#readme",
+  "homepage": "https://github.com/storj/bridge-client-javascript#readme",
   "dependencies": {
     "async": "^1.5.2",
     "elliptic": "^6.2.3",

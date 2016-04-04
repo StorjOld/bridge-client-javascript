@@ -1,7 +1,7 @@
 MetaDisk Client
 ===============
 
-A Simple HTTP client for communicating with the MetaDisk API.
+A Simple HTTP client for communicating with Storj Bridge.
 
 Quick Start
 -----------
@@ -21,11 +21,11 @@ npm run build
 Examples
 --------
 
-Register a user account on MetaDisk:
+Register a user account on Storj Bridge:
 
 ```
 // Import the client
-var metadisk = require('metadisk-client');
+var bridge = require('storj-bridge-client');
 
 // Create unauthenticated instance
 var client = new metadisk.Client('https://api.metadisk.org');
