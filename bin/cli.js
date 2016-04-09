@@ -251,7 +251,7 @@ var ACTIONS = {
       log('error', err.message);
     });
   },
-  addfile: function uploadfile(bucket, filepath) {
+  uploadfile: function uploadfile(bucket, filepath) {
     if (!fs.existsSync(filepath)) {
       return log('error', 'No file found at %s', filepath);
     }
@@ -277,7 +277,28 @@ var ACTIONS = {
       log('error', err.message);
     });
   },
-  getfile: function getfile(bucket, hash, filepath) {
+  getpointer: function getpointer(bucket, hash) {
+    PrivateClient().createToken(bucket, 'PULL').then(function(token) {
+      PrivateClient().getFilePointer(
+        bucket,
+        token.token,
+        hash
+      ).then(function(pointer) {
+        pointer.forEach(function(location) {
+          log(
+            'info',
+            'Hash: %s, Token: %s, Channel: %s',
+            [location.hash, location.token, location.channel]
+          );
+        });
+      }, function(err) {
+        log('error', err.message);
+      });
+    }, function(err) {
+      log('error', err.message);
+    });
+  },
+  downloadfile: function downloadfile(bucket, hash, filepath) {
     if (fs.existsSync(filepath)) {
       return log('error', 'Refusing to overwrite file at %s', filepath);
     }
@@ -322,6 +343,23 @@ var ACTIONS = {
       );
     }, function(err) {
       log('error', err.message);
+    });
+  },
+  streamfile: function downloadfile(bucket, hash) {
+    PrivateClient().createToken(bucket, 'PULL').then(function(token) {
+      PrivateClient().getFilePointer(
+        bucket,
+        token.token,
+        hash
+      ).then(function(pointer) {
+        PrivateClient().resolveFileFromPointers(
+          pointer
+        ).pipe(process.stdout);
+      }, function(err) {
+        process.stderr.write(err.message);
+      });
+    }, function(err) {
+      process.stderr.write(err.message);
     });
   }
 };
@@ -397,14 +435,24 @@ program
   .action(ACTIONS.removefile);
 
 program
-  .command('addfile <bucket> <filepath>')
+  .command('uploadfile <bucket> <filepath>')
   .description('upload a file to the network and track in a bucket')
-  .action(ACTIONS.addfile);
+  .action(ACTIONS.uploadfile);
 
 program
-  .command('getfile <bucket> <hash> <filepath>')
+  .command('downloadfile <bucket> <hash> <filepath>')
   .description('download a file from the network with a pointer from a bucket')
-  .action(ACTIONS.getfile);
+  .action(ACTIONS.downloadfile);
+
+program
+  .command('streamfile <bucket> <hash>')
+  .description('stream a file from the network and write to stdout')
+  .action(ACTIONS.streamfile);
+
+program
+  .command('getpointer <bucket> <hash>')
+  .description('get pointer metadata for a file in a bucket')
+  .action(ACTIONS.getpointer);
 
 program
   .command('createtoken <bucket> <operation>')
