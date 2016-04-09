@@ -10,6 +10,7 @@ var path = require('path');
 var prompt = require('prompt');
 var url = require('url');
 var colors = require('colors/safe');
+var through = require('through');
 
 var HOME = platform !== 'win32' ? process.env.HOME : process.env.USERPROFILE;
 var DATADIR = path.join(HOME, '.storjcli');
@@ -235,7 +236,7 @@ var ACTIONS = {
       files.forEach(function(file) {
         log(
           'info',
-          'Name: %, Type: %s, Size: %sb, Hash: %s',
+          'Name: %s, Type: %s, Size: %s bytes, Hash: %s',
           [file.filename, file.mimetype, file.size, file.hash]
         );
       });
@@ -255,7 +256,9 @@ var ACTIONS = {
       return log('error', 'No file found at %s', filepath);
     }
 
+    log('info', 'Creating storage token...');
     PrivateClient().createToken(bucket, 'PUSH').then(function(token) {
+      log('info', 'Storing file, hang tight!');
       PrivateClient().storeFileInBucket(
         bucket,
         token.token,
@@ -264,7 +267,7 @@ var ACTIONS = {
         log('info', 'File successfully stored in bucket.');
         log(
           'info',
-          'Name: %, Type: %s, Size: %sb, Hash: %s',
+          'Name: %s, Type: %s, Size: %s bytes, Hash: %s',
           [file.filename, file.mimetype, file.size, file.hash]
         );
       }, function(err) {
@@ -279,7 +282,9 @@ var ACTIONS = {
       return log('error', 'Refusing to overwrite file at %s', filepath);
     }
 
+    log('info', 'Creating retrieval token...');
     PrivateClient().createToken(bucket, 'PULL').then(function(token) {
+      log('info', 'Resolving file pointer...');
       PrivateClient().getFilePointer(
         bucket,
         token.token,
@@ -296,9 +301,10 @@ var ACTIONS = {
 
         PrivateClient().resolveFileFromPointers(
           pointer
-        ).on('data', function(chunk) {
+        ).pipe(through(function(chunk) {
           log('info', 'Received %s bytes of data', [chunk.length]);
-        }).pipe(target);
+          this.queue(chunk);
+        })).pipe(target);
       }, function(err) {
         log('error', err.message);
       });
