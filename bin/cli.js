@@ -171,10 +171,7 @@ var ACTIONS = {
         log(
           'info',
           'ID: %s, Name: %s, Storage: %s, Transfer: %s',
-          bucket.id,
-          bucket.name,
-          bucket.storage,
-          bucket.transfer
+          [bucket.id, bucket.name, bucket.storage, bucket.transfer]
         );
       });
     }, function(err) {
@@ -186,10 +183,7 @@ var ACTIONS = {
       log(
         'info',
         'ID: %s, Name: %s, Storage: %s, Transfer: %s',
-        bucket.id,
-        bucket.name,
-        bucket.storage,
-        bucket.transfer
+        [bucket.id, bucket.name, bucket.storage, bucket.transfer]
       );
     }, function(err) {
       log('error', err.message);
@@ -211,10 +205,7 @@ var ACTIONS = {
       log(
         'info',
         'ID: %s, Name: %s, Storage: %s, Transfer: %s',
-        bucket.id,
-        bucket.name,
-        bucket.storage,
-        bucket.transfer
+        [bucket.id, bucket.name, bucket.storage, bucket.transfer]
       );
     }, function(err) {
       log('error', err.message);
@@ -229,10 +220,7 @@ var ACTIONS = {
       log(
         'info',
         'ID: %s, Name: %s, Storage: %s, Transfer: %s',
-        bucket.id,
-        bucket.name,
-        bucket.storage,
-        bucket.transfer
+        [bucket.id, bucket.name, bucket.storage, bucket.transfer]
       );
     }, function(err) {
       log('error', err.message);
@@ -248,10 +236,7 @@ var ACTIONS = {
         log(
           'info',
           'Name: %, Type: %s, Size: %sb, Hash: %s',
-          file.filename,
-          file.mimetype,
-          file.size,
-          file.hash
+          [file.filename, file.mimetype, file.size, file.hash]
         );
       });
     }, function(err) {
@@ -280,10 +265,7 @@ var ACTIONS = {
         log(
           'info',
           'Name: %, Type: %s, Size: %sb, Hash: %s',
-          file.filename,
-          file.mimetype,
-          file.size,
-          file.hash
+          [file.filename, file.mimetype, file.size, file.hash]
         );
       }, function(err) {
         log('error', err.message);
@@ -303,11 +285,11 @@ var ACTIONS = {
         token.token,
         hash
       ).then(function(pointer) {
-        log('info', 'Downloading file from %s channels...', pointer.length);
+        log('info', 'Downloading file from %s channels...', [pointer.length]);
         var target = fs.createWriteStream(filepath);
 
         target.on('finish', function() {
-          log('info', 'File downloaded and written to %s.', filepath);
+          log('info', 'File downloaded and written to %s.', [filepath]);
         }).on('error', function(err) {
           log('error', err.message);
         });
@@ -315,7 +297,7 @@ var ACTIONS = {
         PrivateClient().resolveFileFromPointers(
           pointer
         ).on('data', function(chunk) {
-          log('info', 'Received %s bytes of data');
+          log('info', 'Received %s bytes of data', [chunk.length]);
         }).pipe(target);
       }, function(err) {
         log('error', err.message);
@@ -330,9 +312,7 @@ var ACTIONS = {
       log(
         'info',
         'Token: %s, Bucket: %s, Operation: %s',
-        token.token,
-        token.bucket,
-        token.operation
+        [token.token, token.bucket, token.operation]
       );
     }, function(err) {
       log('error', err.message);
