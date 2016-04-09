@@ -3,8 +3,23 @@ Storj Bridge Client
 
 A Simple HTTP client for communicating with Storj Bridge.
 
-Quick Start
------------
+Usage (Command Line Interface)
+------------------------------
+
+Install the Storj Bridge Command Line Interface using NPM:
+
+```
+npm install -g storj-bridge-client
+```
+
+Run the `storjcli` program to view usage:
+
+```
+storjcli --help
+```
+
+Usage (Programmatic)
+--------------------
 
 Install the Storj Bridge client tools using NPM:
 
@@ -18,8 +33,7 @@ Optionally build a browser bundle:
 npm run build
 ```
 
-Examples
---------
+### Examples
 
 Register a user account on Storj Bridge:
 
