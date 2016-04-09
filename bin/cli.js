@@ -1,0 +1,432 @@
+#!/usr/bin/env node
+
+'use strict';
+
+var bridge = require('..');
+var program = require('commander');
+var fs = require('fs');
+var platform = require('os').platform();
+var path = require('path');
+var prompt = require('prompt');
+var url = require('url');
+var colors = require('colors/safe');
+
+var HOME = platform !== 'win32' ? process.env.HOME : process.env.USERPROFILE;
+var DATADIR = path.join(HOME, '.storjcli');
+var KEYPATH = path.join(DATADIR, 'id_ecdsa');
+
+if (!fs.existsSync(DATADIR)) {
+  fs.mkdirSync(DATADIR);
+}
+
+prompt.message = colors.bold.cyan(' [...]');
+prompt.delimiter = colors.cyan('  > ');
+
+program.version(require('../package').version);
+program.option('-u, --url <url>', 'Set the base URL for the API');
+
+function log(type, message, args) {
+  switch (type) {
+    case 'info':
+      message = colors.bold.cyan(' [info]   ') + message;
+      break;
+    case 'warn':
+      message = colors.bold.yellow(' [warn]   ') + message;
+      break;
+    case 'error':
+      message = colors.bold.red(' [error]  ') + message;
+      break;
+  }
+
+  console.log.apply(console, [message].concat(args || []));
+}
+
+function loadKeyPair() {
+  if (!fs.existsSync(KEYPATH)) {
+    log('error', 'You have not authenticated, please login.');
+    process.exit();
+  }
+
+  return bridge.KeyPair(fs.readFileSync(KEYPATH).toString());
+}
+
+function PrivateClient() {
+  return bridge.Client(program.url, {
+    keypair: loadKeyPair()
+  });
+}
+
+function PublicClient() {
+  return bridge.Client(program.url);
+}
+
+function getCredentials(callback) {
+  prompt.start();
+  prompt.get({
+    properties: {
+      email: {
+        description: 'Enter your email address',
+        required: true
+      },
+      password: {
+        description: 'Enter your password',
+        required: true,
+        replace: '*',
+        hidden: true
+      }
+    }
+  }, callback);
+}
+
+var ACTIONS = {
+  info: function info() {
+    PublicClient().getInfo().then(function(info) {
+      log('info', 'Title: %s', info.info.title);
+      log('info', 'Description: %s', info.info.description);
+      log('info', 'Version: %s', info.info.version);
+      log('info', 'Network Seed: %s', info.info['x-network-seed']);
+      log('info', 'Host: %s', info.host);
+    }, function(err) {
+      log('error', err.message);
+    });
+  },
+  register: function register() {
+    getCredentials(function(err, result) {
+      if (err) {
+        return log('error', err.message);
+      }
+
+      PublicClient().createUser(
+        result.email, result.password
+      ).then(function() {
+        log('info', 'Registered! Check your email to activate your account.');
+      }, function(err) {
+        log('error', err.message);
+      });
+    });
+  },
+  login: function login() {
+    if (fs.existsSync(KEYPATH)) {
+      return log('error', 'This device is already paired.');
+    }
+
+    getCredentials(function(err, result) {
+      if (err) {
+        return log('error', err.message);
+      }
+
+      var client = bridge.Client(program.url, {
+        basicauth: result
+      });
+      var keypair = bridge.KeyPair();
+
+      client.addPublicKey(keypair.getPublicKey()).then(function(result) {
+        fs.writeFileSync(KEYPATH, keypair.getPrivateKey());
+        log('info', 'This device has been successfully paired.');
+      }, function(err) {
+        log('error', err.message);
+      });
+    });
+  },
+  logout: function logout() {
+    var keypair = loadKeyPair();
+
+    PrivateClient().destroyPublicKey(keypair.getPublicKey()).then(function() {
+      fs.unlinkSync(KEYPATH);
+      log('info', 'This device has been successfully revoked.');
+    }, function(err) {
+      log('error', err.message);
+    });
+  },
+  listkeys: function listkeys() {
+    PrivateClient().getPublicKeys().then(function(keys) {
+      keys.forEach(function(key) {
+        log('info', key.key);
+      });
+    }, function(err) {
+      log('error', err.message);
+    });
+  },
+  addkey: function addkey(pubkey) {
+    PrivateClient().addPublicKey(pubkey).then(function() {
+      log('info', 'Key successfully registered.');
+    }, function(err) {
+      log('error', err.message);
+    });
+  },
+  removekey: function removekey(pubkey) {
+    PrivateClient().destroyPublicKey(pubkey).then(function() {
+      log('info', 'Key successfully revoked.');
+    }, function(err) {
+      log('error', err.message);
+    });
+  },
+  listbuckets: function listbuckets() {
+    PrivateClient().getBuckets().then(function(buckets) {
+      if (!buckets.length) {
+        return log('warn', 'You have not created any buckets.');
+      }
+
+      buckets.forEach(function(bucket) {
+        log(
+          'info',
+          'ID: %s, Name: %s, Storage: %s, Transfer: %s',
+          bucket.id,
+          bucket.name,
+          bucket.storage,
+          bucket.transfer
+        );
+      });
+    }, function(err) {
+      log('error', err.message);
+    });
+  },
+  getbucket: function showbucket(id) {
+    PrivateClient().getBucketById(id).then(function(bucket) {
+      log(
+        'info',
+        'ID: %s, Name: %s, Storage: %s, Transfer: %s',
+        bucket.id,
+        bucket.name,
+        bucket.storage,
+        bucket.transfer
+      );
+    }, function(err) {
+      log('error', err.message);
+    });
+  },
+  removebucket: function removebucket(id) {
+    PrivateClient().destroyBucketById(id).then(function() {
+      log('info', 'Bucket successfully destroyed.');
+    }, function(err) {
+      log('error', err.message);
+    });
+  },
+  addbucket: function addbucket(name, storage, transfer) {
+    PrivateClient().createBucket({
+      name: name,
+      storage: storage,
+      transfer: transfer
+    }).then(function(bucket) {
+      log(
+        'info',
+        'ID: %s, Name: %s, Storage: %s, Transfer: %s',
+        bucket.id,
+        bucket.name,
+        bucket.storage,
+        bucket.transfer
+      );
+    }, function(err) {
+      log('error', err.message);
+    });
+  },
+  updatebucket: function updatebucket(id, name, storage, transfer) {
+    PrivateClient().updateBucketById(id, {
+      name: name,
+      storage: storage,
+      transfer: transfer
+    }).then(function(bucket) {
+      log(
+        'info',
+        'ID: %s, Name: %s, Storage: %s, Transfer: %s',
+        bucket.id,
+        bucket.name,
+        bucket.storage,
+        bucket.transfer
+      );
+    }, function(err) {
+      log('error', err.message);
+    });
+  },
+  listfiles: function listfiles(id) {
+    PrivateClient().listFilesInBucket(id).then(function(files) {
+      if (!files.length) {
+        return log('warn', 'There are not files in this bucket.');
+      }
+
+      files.forEach(function(file) {
+        log(
+          'info',
+          'Name: %, Type: %s, Size: %sb, Hash: %s',
+          file.filename,
+          file.mimetype,
+          file.size,
+          file.hash
+        );
+      });
+    }, function(err) {
+      log('error', err.message);
+    });
+  },
+  removefile: function removefile(id, hash) {
+    PrivateClient().removeFileFromBucket(id, hash).then(function() {
+      log('info', 'File was successfully removed from bucket.');
+    }, function(err) {
+      log('error', err.message);
+    });
+  },
+  addfile: function uploadfile(bucket, filepath) {
+    if (!fs.existsSync(filepath)) {
+      return log('error', 'No file found at %s', filepath);
+    }
+
+    PrivateClient().createToken(bucket, 'PUSH').then(function(token) {
+      PrivateClient().storeFileInBucket(
+        bucket,
+        token.token,
+        filepath
+      ).then(function(file) {
+        log('info', 'File successfully stored in bucket.');
+        log(
+          'info',
+          'Name: %, Type: %s, Size: %sb, Hash: %s',
+          file.filename,
+          file.mimetype,
+          file.size,
+          file.hash
+        );
+      }, function(err) {
+        log('error', err.message);
+      });
+    }, function(err) {
+      log('error', err.message);
+    });
+  },
+  getfile: function getfile(bucket, hash, filepath) {
+    if (fs.existsSync(filepath)) {
+      return log('error', 'Refusing to overwrite file at %s', filepath);
+    }
+
+    PrivateClient().createToken(bucket, 'PULL').then(function(token) {
+      PrivateClient().getFilePointer(
+        bucket,
+        token.token,
+        hash
+      ).then(function(pointer) {
+        log('info', 'Downloading file from %s channels...', pointer.length);
+        var target = fs.createWriteStream(filepath);
+
+        target.on('finish', function() {
+          log('info', 'File downloaded and written to %s.', filepath);
+        }).on('error', function(err) {
+          log('error', err.message);
+        });
+
+        PrivateClient().resolveFileFromPointers(
+          pointer
+        ).on('data', function(chunk) {
+          log('info', 'Received %s bytes of data');
+        }).pipe(target);
+      }, function(err) {
+        log('error', err.message);
+      });
+    }, function(err) {
+      log('error', err.message);
+    });
+  },
+  createtoken: function createtoken(bucket, operation) {
+    PrivateClient().createToken(bucket, operation).then(function(token) {
+      log('info', 'Token successfully created.');
+      log(
+        'info',
+        'Token: %s, Bucket: %s, Operation: %s',
+        token.token,
+        token.bucket,
+        token.operation
+      );
+    }, function(err) {
+      log('error', err.message);
+    });
+  }
+};
+
+program
+  .command('info')
+  .description('get remote api information')
+  .action(ACTIONS.info);
+
+program
+  .command('register')
+  .description('register a new account with the storj api')
+  .action(ACTIONS.register);
+
+program
+  .command('login')
+  .description('authorize this device to access your storj api account')
+  .action(ACTIONS.login);
+
+program
+  .command('logout')
+  .description('revoke this device\'s access your storj api account')
+  .action(ACTIONS.logout);
+
+program
+  .command('listkeys')
+  .description('list your registered public keys')
+  .action(ACTIONS.listkeys);
+
+program
+  .command('addkey <pubkey>')
+  .description('register the given public key')
+  .action(ACTIONS.addkey);
+
+program
+  .command('removekey <pubkey>')
+  .description('invalidates the registered public key')
+  .action(ACTIONS.removekey);
+
+program
+  .command('listbuckets')
+  .description('list your storage buckets')
+  .action(ACTIONS.listbuckets);
+
+program
+  .command('getbucket <id>')
+  .description('get specific storage bucket information')
+  .action(ACTIONS.getbucket);
+
+program
+  .command('addbucket [name] [storage] [transfer]')
+  .description('create a new storage bucket')
+  .action(ACTIONS.addbucket);
+
+program
+  .command('removebucket <id>')
+  .description('destroys a specific storage bucket')
+  .action(ACTIONS.removebucket);
+
+program
+  .command('updatebucket <id> [name] [storage] [transfer]')
+  .description('updates a specific storage bucket')
+  .action(ACTIONS.updatebucket);
+
+program
+  .command('listfiles <bucket>')
+  .description('list the files in a specific storage bucket')
+  .action(ACTIONS.listfiles);
+
+program
+  .command('removefile <bucket> <hash>')
+  .description('delete a file pointer from a specific bucket')
+  .action(ACTIONS.removefile);
+
+program
+  .command('addfile <bucket> <filepath>')
+  .description('upload a file to the network and track in a bucket')
+  .action(ACTIONS.addfile);
+
+program
+  .command('getfile <bucket> <hash> <filepath>')
+  .description('download a file from the network with a pointer from a bucket')
+  .action(ACTIONS.getfile);
+
+program
+  .command('createtoken <bucket> <operation>')
+  .description('create a PUSH or PULL token for a file')
+  .action(ACTIONS.getfile);
+
+program.parse(process.argv);
+
+if (process.argv.length < 3) {
+  return program.help();
+}

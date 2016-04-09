@@ -1,10 +1,10 @@
 'use strict';
 
 // Import the client
-var metadisk = require('..');
+var StorjAPI = require('..');
 
 // Create unauthenticated instance
-var client = new metadisk.Client('https://api.metadisk.org');
+var client = new StorjAPI.Client('https://api.storj.io');
 
 // Register a user account
 client.createUser('you@domain.tld', 'somebigsecret').then(function(result) {

@@ -1,15 +1,18 @@
 {
   "name": "storj-bridge-client",
-  "version": "0.3.2",
+  "version": "0.3.4",
   "description": "api client library for storj bridge",
   "main": "index.js",
   "scripts": {
     "test": "",
     "build": "npm run build-bundle && npm run build-minify && echo $(date) >> dist/timestamp.txt",
-    "build-bundle": "./node_modules/.bin/browserify index.js -s metadisk -o dist/storj-bridge.browser.js",
-    "build-minify": "./node_modules/.bin/uglifyjs dist/storj-bridge.browser.js -o dist/storj-bridge.browser.min.js",
+    "build-bundle": "./node_modules/.bin/browserify index.js -s StorjAPI -o dist/storj-api.browser.js",
+    "build-minify": "./node_modules/.bin/uglifyjs dist/storj-api.browser.js -o dist/storj-api.browser.min.js",
     "makedoc": "./node_modules/.bin/jsdoc index.js lib -r -R README.md -c .jsdoc.json --verbose -d ./jsdoc",
     "publishdoc": "npm run makedoc && node script/publishdoc.js"
+  },
+  "bin": {
+    "storjcli": "bin/cli.js"
   },
   "browser": {
     "ws": false,
@@ -20,7 +23,8 @@
     "url": "git+https://github.com/storj/bridge-client-javascript.git"
   },
   "keywords": [
-    "metadisk",
+    "bridge",
+    "storj",
     "client"
   ],
   "author": "Gordon Hall <gordon@storj.io>",
@@ -31,8 +35,11 @@
   "homepage": "https://github.com/storj/bridge-client-javascript#readme",
   "dependencies": {
     "async": "^1.5.2",
+    "colors": "^1.1.2",
+    "commander": "^2.9.0",
     "elliptic": "^6.2.3",
     "ms": "^0.7.1",
+    "prompt": "^1.0.0",
     "readable-stream": "^2.0.5",
     "request": "^2.67.0",
     "ws": "^1.0.1"

@@ -3,11 +3,11 @@
 var fs = require('fs');
 
 // Import the library
-var metadisk = require('..');
+var StorjAPI = require('..');
 
 // Create a client authenticated with your key
-var client = new metadisk.Client('https://api.metadisk.org', {
-  keypair: new metadisk.KeyPair('<your_private_ecdsa_key>')
+var client = new StorjAPI.Client('https://api.storj.io', {
+  keypair: new StorjAPI.KeyPair('<your_private_ecdsa_key>')
 });
 
 // Keep track of the bucket ID and file hash
@@ -16,7 +16,7 @@ var filehash = null;
 
 // Create a PUSH token
 client.createToken(bucket, 'PUSH').then(function(token) {
-  // Stream the file upload to metadisk
+  // Stream the file upload to bridge
   return client.storeFileInBucket(bucket, token.token, process.argv[2]);
 }).then(function(filepointer) {
   // Track the file hash for later

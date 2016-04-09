@@ -1,10 +1,10 @@
 'use strict';
 
 // Import the client
-var metadisk = require('..');
+var StorjAPI = require('..');
 
 // Authenticate with credentials
-var client = new metadisk.Client('https://api.metadisk.org', {
+var client = new StorjAPI.Client('https://api.storj.io', {
   basicauth: {
     email: 'you@domain.tld',
     password: 'somebigsecret'

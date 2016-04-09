@@ -28,7 +28,7 @@ Register a user account on Storj Bridge:
 var bridge = require('storj-bridge-client');
 
 // Create unauthenticated instance
-var client = new bridge.Client('https://api.metadisk.org');
+var client = new bridge.Client('https://api.storj.io');
 
 // Register a user account
 client.createUser('you@domain.tld', 'somebigsecret').then(function(result) {
@@ -45,7 +45,7 @@ Create a storage bucket for your user:
 var bridge = require('storj-bridge-client');
 
 // Authenticate with credentials
-var client = new bridge.Client('https://api.metadisk.org', {
+var client = new bridge.Client('https://api.storj.io', {
   basicauth: {
     email: 'you@domain.tld',
     password: 'somebigsecret'
@@ -69,7 +69,7 @@ var fs = require('fs');
 var bridge = require('storj-bridge-client');
 
 // Create a client authenticated with your key
-var client = new bridge.Client('https://api.metadisk.org', {
+var client = new bridge.Client('https://api.storj.io', {
   keypair: new bridge.KeyPair('<your_private_ecdsa_key>')
 });
 
@@ -79,7 +79,7 @@ var filehash = null;
 
 // Create a PUSH token
 client.createToken(bucket, 'PUSH').then(function(token) {
-  // Stream the file upload to metadisk
+  // Stream the file upload to bridge
   return client.storeFileInBucket(bucket, token.token, process.argv[2]);
 }).then(function(filepointer) {
   // Track the file hash for later
