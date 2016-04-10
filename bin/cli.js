@@ -322,7 +322,9 @@ var ACTIONS = {
 
         PrivateClient().resolveFileFromPointers(
           pointer
-        ).pipe(through(function(chunk) {
+        ).on('error', function(err) {
+          log('error', err.message);
+        }).pipe(through(function(chunk) {
           log('info', 'Received %s bytes of data', [chunk.length]);
           this.queue(chunk);
         })).pipe(target);
