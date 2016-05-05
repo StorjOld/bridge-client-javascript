@@ -1,11 +1,17 @@
 /**
  * @module bridge-client
- * @license magnet:?xt=urn:btih:0ef1b8170b3b615170ff270def6427c317705f85&dn=lgpl-3.0.txt LGPL-3.0
  */
 
 'use strict';
 
-/** {@link Client} */
+/**
+ * @external storj
+ * @see {@link https://github.com/storj/core}
+ */
+module.exports.__core = require('storj');
+module.exports.KeyPair = module.exports.__core.KeyPair;
+
+/**
+ * {@link Client}
+ */
 module.exports.Client = require('./lib/client');
-/** {@link KeyPair} */
-module.exports.KeyPair = require('./lib/keypair');
