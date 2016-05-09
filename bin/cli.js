@@ -264,7 +264,7 @@ var ACTIONS = {
     }
 
     var secret = new storj.KeyPair();
-    var padder = new storj.FilePadder();
+    var padder = new storj.Padder();
     var encrypter = new storj.EncryptStream(secret);
     var tmppath = path.join(os.tmpdir(), path.basename(filepath));
 
@@ -385,7 +385,7 @@ var ACTIONS = {
           return log('error', 'No decryption key found in key ring!');
         }
 
-        var unpadder = new storj.FileUnpadder();
+        var unpadder = new storj.Unpadder();
         var decrypter = new storj.DecryptStream(secret);
 
         target.on('finish', function() {
@@ -431,7 +431,7 @@ var ACTIONS = {
     }
 
     var decrypter = new storj.DecryptStream(secret);
-    var unpadder = new storj.FileUnpadder();
+    var unpadder = new storj.Unpadder();
 
     PrivateClient().createToken(bucket, 'PULL').then(function(token) {
       PrivateClient().getFilePointer(
