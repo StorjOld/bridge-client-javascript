@@ -11,10 +11,13 @@ var prompt = require('prompt');
 var url = require('url');
 var colors = require('colors/safe');
 var through = require('through');
+var storj = require('storj');
+var os = require('os');
 
 var HOME = platform !== 'win32' ? process.env.HOME : process.env.USERPROFILE;
 var DATADIR = path.join(HOME, '.storjcli');
 var KEYPATH = path.join(DATADIR, 'id_ecdsa');
+var KEYRINGPATH = path.join(DATADIR, 'keyring');
 
 if (!fs.existsSync(DATADIR)) {
   fs.mkdirSync(DATADIR);
@@ -25,6 +28,7 @@ prompt.delimiter = colors.cyan('  > ');
 
 program.version(require('../package').version);
 program.option('-u, --url <url>', 'Set the base URL for the API');
+program.option('-k, --keypass <password>', 'Unlock keyring without prompt');
 
 function log(type, message, args) {
   switch (type) {
@@ -59,6 +63,50 @@ function PrivateClient() {
 
 function PublicClient() {
   return bridge.Client(program.url);
+}
+
+function getKeyRing(callback) {
+  if (program.keypass) {
+    var keyring;
+
+    try {
+      keyring = storj.KeyRing(KEYRINGPATH, program.keypass);
+    } catch (err) {
+      return log('error', 'Could not unlock keyring, bad password?');
+    }
+
+    return callback(keyring);
+  }
+
+  var description = fs.existsSync(KEYRINGPATH) ?
+                    'Enter your passphrase to unlock your keyring' :
+                    'Enter a passphrase to protect your keyring';
+
+  prompt.start();
+  prompt.get({
+    properties: {
+      passphrase: {
+        description: description,
+        replace: '*',
+        hidden: true,
+        default: ''
+      }
+    }
+  }, function(err, result) {
+    if (err) {
+      return log('error', err.message);
+    }
+
+    var keyring;
+
+    try {
+      keyring = storj.KeyRing(KEYRINGPATH, result.passphrase);
+    } catch (err) {
+      return log('error', 'Could not unlock keyring, bad password?');
+    }
+
+    callback(keyring);
+  });
 }
 
 function getCredentials(callback) {
@@ -236,16 +284,16 @@ var ACTIONS = {
       files.forEach(function(file) {
         log(
           'info',
-          'Name: %s, Type: %s, Size: %s bytes, Hash: %s',
-          [file.filename, file.mimetype, file.size, file.hash]
+          'Name: %s, Type: %s, Size: %s bytes, ID: %s',
+          [file.filename, file.mimetype, file.size, file.id]
         );
       });
     }, function(err) {
       log('error', err.message);
     });
   },
-  removefile: function removefile(id, hash) {
-    PrivateClient().removeFileFromBucket(id, hash).then(function() {
+  removefile: function removefile(id, fileId) {
+    PrivateClient().removeFileFromBucket(id, fileId).then(function() {
       log('info', 'File was successfully removed from bucket.');
     }, function(err) {
       log('error', err.message);
@@ -256,39 +304,58 @@ var ACTIONS = {
       return log('error', 'No file found at %s', filepath);
     }
 
-    log('info', 'Creating storage token...');
-    PrivateClient().createToken(bucket, 'PUSH').then(function(token) {
-      log('info', 'Storing file, hang tight!');
-      PrivateClient().storeFileInBucket(
-        bucket,
-        token.token,
-        filepath
-      ).then(function(file) {
-        log('info', 'File successfully stored in bucket.');
-        log(
-          'info',
-          'Name: %s, Type: %s, Size: %s bytes, Hash: %s',
-          [file.filename, file.mimetype, file.size, file.hash]
-        );
-      }, function(err) {
-        log('error', err.message);
-      });
-    }, function(err) {
-      log('error', err.message);
+    var secret = new storj.KeyPair();
+    var padder = new storj.Padder();
+    var encrypter = new storj.EncryptStream(secret);
+    var tmppath = path.join(os.tmpdir(), path.basename(filepath));
+
+    getKeyRing(function(keyring) {
+      log('info', 'Generating encryption key...');
+      log('info', 'Encrypting file "%s"', [filepath]);
+
+      fs.createReadStream(filepath)
+        .pipe(padder)
+        .pipe(encrypter)
+        .pipe(fs.createWriteStream(tmppath)).on('finish', function() {
+          log('info', 'Encryption complete!');
+          log('info', 'Creating storage token...');
+          PrivateClient().createToken(bucket, 'PUSH').then(function(token) {
+            log('info', 'Storing file, hang tight!');
+            PrivateClient().storeFileInBucket(
+              bucket,
+              token.token,
+              tmppath
+            ).then(function(file) {
+              keyring.set(file.id, secret);
+              log('info', 'Encryption key saved to keyring.');
+              log('info', 'File successfully stored in bucket.');
+              log(
+                'info',
+                'Name: %s, Type: %s, Size: %s bytes, ID: %s',
+                [file.filename, file.mimetype, file.size, file.id]
+              );
+            }, function(err) {
+              log('error', err.message);
+            });
+          }, function(err) {
+            log('error', err.message);
+          });
+        }
+      );
     });
   },
-  getpointer: function getpointer(bucket, hash) {
+  getpointer: function getpointer(bucket, id) {
     PrivateClient().createToken(bucket, 'PULL').then(function(token) {
       PrivateClient().getFilePointer(
         bucket,
         token.token,
-        hash
+        id
       ).then(function(pointer) {
         pointer.forEach(function(location) {
           log(
             'info',
-            'Hash: %s, Token: %s, Channel: %s',
-            [location.hash, location.token, location.channel]
+            'Hash: %s, Token: %s, Farmer: %j',
+            [location.hash, location.token, location.farmer]
           );
         });
       }, function(err) {
@@ -298,41 +365,95 @@ var ACTIONS = {
       log('error', err.message);
     });
   },
-  downloadfile: function downloadfile(bucket, hash, filepath) {
+  addframe: function addframe() {
+    PrivateClient().createFileStagingFrame().then(function(frame) {
+      log('info', 'ID: %s, Created: %s', [frame.id, frame.created]);
+    }, function(err) {
+      log('error', err.message);
+    });
+  },
+  listframes: function listframes() {
+    PrivateClient().getFileStagingFrames().then(function(frames) {
+      if (!frames.length) {
+        return log('warn', 'There are no frames to list.');
+      }
+
+      frames.forEach(function(frame) {
+        log(
+          'info',
+          'ID: %s, Created: %s, Shards: %s',
+          [frame.id, frame.created, frame.shards.length]
+        );
+      });
+    }, function(err) {
+      log('error', err.message);
+    });
+  },
+  getframe: function getframe(frame) {
+    PrivateClient().getFileStagingFrameById(frame).then(function(frame) {
+      log(
+        'info',
+        'ID: %s, Created: %s, Shards: %s',
+        [frame.id, frame.created, frame.shards.length]
+      );
+    }, function(err) {
+      log('error', err.message);
+    });
+  },
+  removeframe: function removeframe(frame) {
+    PrivateClient().destroyFileStagingFrameById(frame).then(function() {
+      log('info', 'Frame was successfully removed.');
+    }, function(err) {
+      log('error', err.message);
+    });
+  },
+  downloadfile: function downloadfile(bucket, id, filepath) {
     if (fs.existsSync(filepath)) {
       return log('error', 'Refusing to overwrite file at %s', filepath);
     }
 
-    log('info', 'Creating retrieval token...');
-    PrivateClient().createToken(bucket, 'PULL').then(function(token) {
-      log('info', 'Resolving file pointer...');
-      PrivateClient().getFilePointer(
-        bucket,
-        token.token,
-        hash
-      ).then(function(pointer) {
-        log('info', 'Downloading file from %s channels...', [pointer.length]);
-        var target = fs.createWriteStream(filepath);
+    getKeyRing(function(keyring) {
+      log('info', 'Creating retrieval token...');
+      PrivateClient().createToken(bucket, 'PULL').then(function(token) {
+        log('info', 'Resolving file pointer...');
+        PrivateClient().getFilePointer(
+          bucket,
+          token.token,
+          id
+        ).then(function(pointer) {
+          log('info', 'Downloading file from %s channels...', [pointer.length]);
+          var target = fs.createWriteStream(filepath);
+          var secret = keyring.get(id);
 
-        target.on('finish', function() {
-          log('info', 'File downloaded and written to %s.', [filepath]);
-        }).on('error', function(err) {
+          if (!secret) {
+            return log('error', 'No decryption key found in key ring!');
+          }
+
+          var unpadder = new storj.Unpadder();
+          var decrypter = new storj.DecryptStream(secret);
+
+          target.on('finish', function() {
+            log('info', 'File downloaded and written to %s.', [filepath]);
+          }).on('error', function(err) {
+            log('error', err.message);
+          });
+
+          PrivateClient().resolveFileFromPointers(pointer).then(function(stream) {
+            stream.on('error', function(err) {
+              log('error', err.message);
+            }).pipe(through(function(chunk) {
+              log('info', 'Received %s bytes of data', [chunk.length]);
+              this.queue(chunk);
+            })).pipe(decrypter).pipe(unpadder).pipe(target);
+          }, function(err) {
+            log('error', err.message);
+          });
+        }, function(err) {
           log('error', err.message);
         });
-
-        PrivateClient().resolveFileFromPointers(
-          pointer
-        ).on('error', function(err) {
-          log('error', err.message);
-        }).pipe(through(function(chunk) {
-          log('info', 'Received %s bytes of data', [chunk.length]);
-          this.queue(chunk);
-        })).pipe(target);
       }, function(err) {
         log('error', err.message);
       });
-    }, function(err) {
-      log('error', err.message);
     });
   },
   createtoken: function createtoken(bucket, operation) {
@@ -347,21 +468,55 @@ var ACTIONS = {
       log('error', err.message);
     });
   },
-  streamfile: function downloadfile(bucket, hash) {
-    PrivateClient().createToken(bucket, 'PULL').then(function(token) {
-      PrivateClient().getFilePointer(
-        bucket,
-        token.token,
-        hash
-      ).then(function(pointer) {
-        PrivateClient().resolveFileFromPointers(
-          pointer
-        ).pipe(process.stdout);
+  streamfile: function downloadfile(bucket, id) {
+    getKeyRing(function(keyring) {
+      var secret = keyring.get(id);
+
+      if (!secret) {
+        return log('error', 'No decryption key found in key ring!');
+      }
+
+      var decrypter = new storj.DecryptStream(secret);
+      var unpadder = new storj.Unpadder();
+
+      PrivateClient().createToken(bucket, 'PULL').then(function(token) {
+        PrivateClient().getFilePointer(
+          bucket,
+          token.token,
+          id
+        ).then(function(pointer) {
+          PrivateClient().resolveFileFromPointers(
+            pointer
+          ).pipe(decrypter).pipe(unpadder).pipe(process.stdout);
+        }, function(err) {
+          process.stderr.write(err.message);
+        });
       }, function(err) {
         process.stderr.write(err.message);
       });
-    }, function(err) {
-      process.stderr.write(err.message);
+    });
+  },
+  resetkeyring: function resetkeyring() {
+    getKeyRing(function(keyring) {
+      prompt.start();
+      prompt.get({
+        properties: {
+          passphrase: {
+            description: 'Enter a new password for your keyring',
+            replace: '*',
+            hidden: true,
+            default: ''
+          }
+        }
+      }, function(err, result) {
+        if (err) {
+          return log('error', err.message);
+        }
+
+        keyring._pass = result.passphrase;
+        keyring._saveKeyRingToDisk();
+        log('info', 'Password for keyring has been reset.');
+      });
     });
   }
 };
@@ -427,12 +582,32 @@ program
   .action(ACTIONS.updatebucket);
 
 program
+  .command('addframe')
+  .description('creates a new file staging frame')
+  .action(ACTIONS.addframe);
+
+program
+  .command('listframes')
+  .description('lists your file staging frames')
+  .action(ACTIONS.listframes);
+
+program
+  .command('getframe <id>')
+  .description('retreives the file staging frame by id')
+  .action(ACTIONS.getframe);
+
+program
+  .command('removeframe <id>')
+  .description('removes the file staging frame by id')
+  .action(ACTIONS.removeframe);
+
+program
   .command('listfiles <bucket>')
   .description('list the files in a specific storage bucket')
   .action(ACTIONS.listfiles);
 
 program
-  .command('removefile <bucket> <hash>')
+  .command('removefile <bucket> <id>')
   .description('delete a file pointer from a specific bucket')
   .action(ACTIONS.removefile);
 
@@ -442,17 +617,17 @@ program
   .action(ACTIONS.uploadfile);
 
 program
-  .command('downloadfile <bucket> <hash> <filepath>')
+  .command('downloadfile <bucket> <id> <filepath>')
   .description('download a file from the network with a pointer from a bucket')
   .action(ACTIONS.downloadfile);
 
 program
-  .command('streamfile <bucket> <hash>')
+  .command('streamfile <bucket> <id>')
   .description('stream a file from the network and write to stdout')
   .action(ACTIONS.streamfile);
 
 program
-  .command('getpointer <bucket> <hash>')
+  .command('getpointer <bucket> <id>')
   .description('get pointer metadata for a file in a bucket')
   .action(ACTIONS.getpointer);
 
@@ -460,6 +635,11 @@ program
   .command('createtoken <bucket> <operation>')
   .description('create a PUSH or PULL token for a file')
   .action(ACTIONS.getfile);
+
+program
+  .command('resetkeyring')
+  .description('reset the keyring password')
+  .action(ACTIONS.resetkeyring);
 
 program.parse(process.argv);
 
