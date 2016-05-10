@@ -67,7 +67,15 @@ function PublicClient() {
 
 function getKeyRing(callback) {
   if (program.keypass) {
-    return callback(storj.KeyRing(KEYRINGPATH, program.keypass));
+    var keyring;
+
+    try {
+      keyring = storj.KeyRing(KEYRINGPATH, program.keypass);
+    } catch (err) {
+      return log('error', 'Could not unlock keyring, bad password?');
+    }
+
+    return callback(keyring);
   }
 
   var description = fs.existsSync(KEYRINGPATH) ?
