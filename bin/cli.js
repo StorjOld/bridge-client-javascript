@@ -27,8 +27,8 @@ prompt.message = colors.bold.cyan(' [...]');
 prompt.delimiter = colors.cyan('  > ');
 
 program.version(require('../package').version);
-program.option('-u, --url <url>', 'Set the base URL for the API');
-program.option('-k, --keypass <password>', 'Unlock keyring without prompt');
+program.option('-u, --url <url>', 'set the base url for the api');
+program.option('-k, --keypass <password>', 'unlock keyring without prompt');
 
 function log(type, message, args) {
   switch (type) {
@@ -487,7 +487,11 @@ var ACTIONS = {
         ).then(function(pointer) {
           PrivateClient().resolveFileFromPointers(
             pointer
-          ).pipe(decrypter).pipe(unpadder).pipe(process.stdout);
+          ).then(function(stream) {
+            stream.pipe(decrypter).pipe(unpadder).pipe(process.stdout);
+          }, function(err) {
+            process.stderr.write(err.message);
+          });
         }, function(err) {
           process.stderr.write(err.message);
         });
@@ -633,7 +637,7 @@ program
 
 program
   .command('createtoken <bucket> <operation>')
-  .description('create a PUSH or PULL token for a file')
+  .description('create a push or pull token for a file')
   .action(ACTIONS.getfile);
 
 program
