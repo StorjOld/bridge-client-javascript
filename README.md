@@ -37,7 +37,7 @@ npm run build
 
 Register a user account on Storj Bridge:
 
-```
+```js
 // Import the client
 var bridge = require('storj-bridge-client');
 
@@ -54,7 +54,7 @@ client.createUser('you@domain.tld', 'somebigsecret').then(function(result) {
 
 Create a storage bucket for your user:
 
-```
+```js
 // Import the client
 var bridge = require('storj-bridge-client');
 
@@ -76,7 +76,7 @@ client.createBucket().then(function(result) {
 
 Store and retrieve a file from the Storj network:
 
-```
+```js
 var fs = require('fs');
 
 // Import the library
