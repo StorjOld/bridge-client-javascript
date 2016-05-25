@@ -1,6 +1,6 @@
 {
   "name": "storj-bridge-client",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "api client library and cli for storj bridge",
   "main": "index.js",
   "scripts": {
