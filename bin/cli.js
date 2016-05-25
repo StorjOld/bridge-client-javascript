@@ -128,13 +128,13 @@ function getCredentials(callback) {
 }
 
 var ACTIONS = {
-  info: function info() {
+  getinfo: function getinfo() {
     PublicClient().getInfo().then(function(info) {
-      log('info', 'Title: %s', info.info.title);
-      log('info', 'Description: %s', info.info.description);
-      log('info', 'Version: %s', info.info.version);
+      log('info', 'Title:        %s', info.info.title);
+      log('info', 'Description:  %s', info.info.description);
+      log('info', 'Version:      %s', info.info.version);
       log('info', 'Network Seed: %s', info.info['x-network-seed']);
-      log('info', 'Host: %s', info.host);
+      log('info', 'Host:         %s', info.host);
     }, function(err) {
       log('error', err.message);
     });
@@ -522,13 +522,41 @@ var ACTIONS = {
         log('info', 'Password for keyring has been reset.');
       });
     });
+  },
+  listcontacts: function listcontacts(page) {
+    PublicClient().getContactList({
+      page: page,
+      connected: this.connected
+    }).then(function(contacts) {
+      if (!contacts.length) {
+        return log('warn', 'There are no contacts to show');
+      }
+
+      contacts.forEach(function(contact) {
+        log('info', 'Contact:   ' + storj.utils.getContactURL(contact));
+        log('info', 'Last Seen: ' + contact.lastSeen);
+        log('info', 'Protocol:  ' + (contact.protocol || '?'));
+        log('info', '');
+      });
+    }, function(err) {
+      log('error', err.message);
+    });
+  },
+  getcontact: function getcontact(nodeid) {
+    PublicClient().getContactByNodeId(nodeid).then(function(contact) {
+      log('info', 'Contact:   ' + storj.utils.getContactURL(contact));
+      log('info', 'Last Seen: ' + contact.lastSeen);
+      log('info', 'Protocol:  ' + (contact.protocol || '?'));
+    }, function(err) {
+      log('error', err.message);
+    });
   }
 };
 
 program
-  .command('info')
+  .command('getinfo')
   .description('get remote api information')
-  .action(ACTIONS.info);
+  .action(ACTIONS.getinfo);
 
 program
   .command('register')
@@ -639,6 +667,17 @@ program
   .command('createtoken <bucket> <operation>')
   .description('create a push or pull token for a file')
   .action(ACTIONS.getfile);
+
+program
+  .command('listcontacts [page]')
+  .option('-c, --connected', 'limit results to connected nodes')
+  .description('list the peers known to the remote bridge')
+  .action(ACTIONS.listcontacts);
+
+program
+  .command('getcontact <nodeid>')
+  .description('get the contact information for a given node id')
+  .action(ACTIONS.getcontact);
 
 program
   .command('resetkeyring')
