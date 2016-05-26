@@ -22,6 +22,12 @@
     "client"
   ],
   "author": "Gordon Hall <gordon@storj.io>",
+  "contributors": [
+    {
+      "name": "Philip Hutchins",
+      "url": "https://github.com/phutchins"
+    }
+  ],
   "license": "AGPL-3.0",
   "bugs": {
     "url": "https://github.com/storj/bridge-client-javascript/issues"

@@ -689,3 +689,14 @@ program.parse(process.argv);
 if (process.argv.length < 3) {
   return program.help();
 }
+
+var firstArg = program.args[program.args.length - 1]._name;
+var commandIsUnknown = typeof firstArg === 'undefined';
+
+if (commandIsUnknown) {
+  return log(
+    'error',
+    'Unknown option \'%s\', please use --help for assistance',
+    program.args[0]
+  );
+}
