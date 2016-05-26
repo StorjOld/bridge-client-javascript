@@ -643,6 +643,10 @@ program
 
 program.parse(process.argv);
 
+if (typeof program.args[program.args.length-1]._name === 'undefined') {
+    log('error', 'Unknown option \'%s\', please use --help for assistance', program.args[0]);
+}
+
 if (process.argv.length < 3) {
   return program.help();
 }
