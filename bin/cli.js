@@ -182,9 +182,12 @@ var ACTIONS = {
 
     PrivateClient().destroyPublicKey(keypair.getPublicKey()).then(function() {
       fs.unlinkSync(KEYPATH);
-      log('info', 'This device has been successfully revoked.');
+      log('info', 'This device has been successfully unpaired.');
     }, function(err) {
-      log('error', err.message);
+      fs.unlinkSync(KEYPATH);
+      log('info', 'This device has been successfully unpaired.');
+      log('warn', 'Failed to revoke key, you may need to do it manually.');
+      log('warn', 'Reason: ' + err.message);
     });
   },
   listkeys: function listkeys() {
@@ -309,6 +312,11 @@ var ACTIONS = {
     var encrypter = new storj.EncryptStream(secret);
     var tmppath = path.join(os.tmpdir(), path.basename(filepath));
 
+    function cleanup() {
+      log('info', 'Cleaning up...');
+      fs.unlinkSync(tmppath);
+    }
+
     getKeyRing(function(keyring) {
       log('info', 'Generating encryption key...');
       log('info', 'Encrypting file "%s"', [filepath]);
@@ -327,6 +335,7 @@ var ACTIONS = {
               tmppath
             ).then(function(file) {
               keyring.set(file.id, secret);
+              cleanup();
               log('info', 'Encryption key saved to keyring.');
               log('info', 'File successfully stored in bucket.');
               log(
@@ -334,10 +343,13 @@ var ACTIONS = {
                 'Name: %s, Type: %s, Size: %s bytes, ID: %s',
                 [file.filename, file.mimetype, file.size, file.id]
               );
+
             }, function(err) {
+              cleanup();
               log('error', err.message);
             });
           }, function(err) {
+            cleanup();
             log('error', err.message);
           });
         }
