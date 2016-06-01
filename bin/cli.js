@@ -130,11 +130,13 @@ function getCredentials(callback) {
 var ACTIONS = {
   getinfo: function getinfo() {
     PublicClient().getInfo().then(function(info) {
-      log('info', 'Title:        %s', info.info.title);
-      log('info', 'Description:  %s', info.info.description);
-      log('info', 'Version:      %s', info.info.version);
-      log('info', 'Network Seed: %s', info.info['x-network-seed']);
-      log('info', 'Host:         %s', info.host);
+      log('info', 'Title:             %s', info.info.title);
+      log('info', 'Description:       %s', info.info.description);
+      log('info', 'Version:           %s', info.info.version);
+      log('info', 'Host:              %s', info.host);
+      info.info['x-network-seeds'].forEach(function(seed, i) {
+        log('info', 'Network Seed (%s): %s', seed);
+      });
     }, function(err) {
       log('error', err.message);
     });
@@ -308,7 +310,6 @@ var ACTIONS = {
     }
 
     var secret = new storj.KeyPair();
-    var padder = new storj.Padder();
     var encrypter = new storj.EncryptStream(secret);
     var tmppath = path.join(os.tmpdir(), path.basename(filepath));
 
@@ -322,7 +323,6 @@ var ACTIONS = {
       log('info', 'Encrypting file "%s"', [filepath]);
 
       fs.createReadStream(filepath)
-        .pipe(padder)
         .pipe(encrypter)
         .pipe(fs.createWriteStream(tmppath)).on('finish', function() {
           log('info', 'Encryption complete!');
@@ -441,7 +441,6 @@ var ACTIONS = {
             return log('error', 'No decryption key found in key ring!');
           }
 
-          var unpadder = new storj.Unpadder();
           var decrypter = new storj.DecryptStream(secret);
 
           target.on('finish', function() {
@@ -456,7 +455,7 @@ var ACTIONS = {
             }).pipe(through(function(chunk) {
               log('info', 'Received %s bytes of data', [chunk.length]);
               this.queue(chunk);
-            })).pipe(decrypter).pipe(unpadder).pipe(target);
+            })).pipe(decrypter).pipe(target);
           }, function(err) {
             log('error', err.message);
           });
@@ -489,7 +488,6 @@ var ACTIONS = {
       }
 
       var decrypter = new storj.DecryptStream(secret);
-      var unpadder = new storj.Unpadder();
 
       PrivateClient().createToken(bucket, 'PULL').then(function(token) {
         PrivateClient().getFilePointer(
@@ -500,7 +498,7 @@ var ACTIONS = {
           PrivateClient().resolveFileFromPointers(
             pointer
           ).then(function(stream) {
-            stream.pipe(decrypter).pipe(unpadder).pipe(process.stdout);
+            stream.pipe(decrypter).pipe(process.stdout);
           }, function(err) {
             process.stderr.write(err.message);
           });
