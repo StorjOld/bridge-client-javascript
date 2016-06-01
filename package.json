@@ -1,6 +1,6 @@
 {
   "name": "storj-bridge-client",
-  "version": "0.4.3",
+  "version": "0.5.0",
   "description": "api client library and cli for storj bridge",
   "main": "index.js",
   "scripts": {
@@ -42,7 +42,7 @@
     "node-uuid": "^1.4.7",
     "prompt": "^1.0.0",
     "request": "^2.67.0",
-    "storj": "^0.6.16",
+    "storj": "^1.0.0",
     "through": "^2.3.8"
   },
   "devDependencies": {
