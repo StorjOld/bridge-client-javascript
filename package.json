@@ -42,7 +42,7 @@
     "node-uuid": "^1.4.7",
     "prompt": "^1.0.0",
     "request": "^2.67.0",
-    "storj": "^1.0.0",
+    "storj": "^1.0.1",
     "through": "^2.3.8"
   },
   "devDependencies": {
