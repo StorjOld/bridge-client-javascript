@@ -130,12 +130,12 @@ function getCredentials(callback) {
 var ACTIONS = {
   getinfo: function getinfo() {
     PublicClient().getInfo().then(function(info) {
-      log('info', 'Title:             %s', info.info.title);
-      log('info', 'Description:       %s', info.info.description);
-      log('info', 'Version:           %s', info.info.version);
-      log('info', 'Host:              %s', info.host);
+      log('info', 'Title:             %s', [info.info.title]);
+      log('info', 'Description:       %s', [info.info.description]);
+      log('info', 'Version:           %s', [info.info.version]);
+      log('info', 'Host:              %s', [info.host]);
       info.info['x-network-seeds'].forEach(function(seed, i) {
-        log('info', 'Network Seed (%s): %s', seed);
+        log('info', 'Network Seed (%s):  %s', [i, seed]);
       });
     }, function(err) {
       log('error', err.message);
@@ -309,7 +309,7 @@ var ACTIONS = {
       return log('error', 'No file found at %s', filepath);
     }
 
-    var secret = new storj.KeyPair();
+    var secret = new storj.DataCipherKeyIv();
     var encrypter = new storj.EncryptStream(secret);
     var tmppath = path.join(os.tmpdir(), path.basename(filepath));
 
