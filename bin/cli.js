@@ -560,6 +560,14 @@ var ACTIONS = {
     }, function(err) {
       log('error', err.message);
     });
+  },
+  fallthrough: function(command) {
+    log(
+      'error',
+      'Unknown command "%s", please use --help for assistance',
+      command
+    );
+    program.help();
   }
 };
 
@@ -694,19 +702,13 @@ program
   .description('reset the keyring password')
   .action(ACTIONS.resetkeyring);
 
+program
+  .command('*')
+  .description('prints the usage information to the console')
+  .action(ACTIONS.fallthrough);
+
 program.parse(process.argv);
 
 if (process.argv.length < 3) {
   return program.help();
-}
-
-var firstArg = program.args[program.args.length - 1]._name;
-var commandIsUnknown = typeof firstArg === 'undefined';
-
-if (commandIsUnknown) {
-  return log(
-    'error',
-    'Unknown option \'%s\', please use --help for assistance',
-    program.args[0]
-  );
 }
