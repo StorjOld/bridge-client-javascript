@@ -1,3 +1,5 @@
+# THIS PACKAGE HAS BEEN DEPRECATED AS A STANDALONE MODULE. USE [STORJ/CORE](https://github.com/storj/core) INSTEAD.
+
 Storj Bridge Client
 ===================
 
